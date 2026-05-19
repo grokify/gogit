@@ -3,7 +3,7 @@ module github.com/grokify/gitscan
 go 1.25.0
 
 require (
-	github.com/go-git/go-git/v5 v5.19.0
+	github.com/go-git/go-git/v5 v5.19.1
 	github.com/grokify/mogo v0.74.0
 	github.com/spf13/cobra v1.10.2
 )
