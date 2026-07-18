@@ -1,23 +1,60 @@
 {
   "ir_version": "1.0",
-  "project": "gitscan",
-  "repository": "https://github.com/grokify/gitscan",
-
+  "project": "gogit",
+  "repository": "https://github.com/grokify/gogit",
   "legend": {
-    "completed": {"emoji": "✅", "description": "Completed"},
-    "in_progress": {"emoji": "🚧", "description": "In Progress"},
-    "planned": {"emoji": "📋", "description": "Planned"},
-    "future": {"emoji": "💡", "description": "Under Consideration"}
+    "completed": {
+      "emoji": "\u2705",
+      "description": "Completed"
+    },
+    "in_progress": {
+      "emoji": "\ud83d\udea7",
+      "description": "In Progress"
+    },
+    "planned": {
+      "emoji": "\ud83d\udccb",
+      "description": "Planned"
+    },
+    "future": {
+      "emoji": "\ud83d\udca1",
+      "description": "Under Consideration"
+    }
   },
-
   "areas": [
-    {"id": "core", "name": "Core", "priority": 1},
-    {"id": "cli", "name": "CLI", "priority": 2},
-    {"id": "scanner", "name": "Scanner", "priority": 3},
-    {"id": "testing", "name": "Testing", "priority": 4}
+    {
+      "id": "core",
+      "name": "Core",
+      "priority": 1
+    },
+    {
+      "id": "cli",
+      "name": "CLI",
+      "priority": 2
+    },
+    {
+      "id": "scanner",
+      "name": "Scanner",
+      "priority": 3
+    },
+    {
+      "id": "testing",
+      "name": "Testing",
+      "priority": 4
+    },
+    {
+      "id": "library",
+      "name": "Library",
+      "priority": 0
+    }
   ],
-
   "phases": [
+    {
+      "id": "v0.5",
+      "name": "v0.5.0 - gogit Library",
+      "status": "completed",
+      "order": 5,
+      "description": "Rename to gogit: generic Git base library with the gitscan CLI at cmd/gitscan"
+    },
     {
       "id": "v0.1",
       "name": "v0.1.0 - Initial Release",
@@ -47,7 +84,6 @@
       "description": "Ideas under consideration"
     }
   ],
-
   "items": [
     {
       "id": "initial-scanner",
@@ -221,23 +257,102 @@
       "area": "scanner",
       "type": "Added",
       "priority": "low"
+    },
+    {
+      "id": "core-library",
+      "title": "Core git library",
+      "description": "Discovery, commit-log parsing with trailers and numstat, branch/origin metadata, remote-URL normalization, tag dates",
+      "status": "completed",
+      "version": "0.5.0",
+      "phase": "v0.5",
+      "area": "library",
+      "type": "Added",
+      "priority": "high"
+    },
+    {
+      "id": "drop-go-git",
+      "title": "Drop go-git backend and dependency",
+      "description": "git CLI is the only backend; module dependency tree substantially reduced for library consumers",
+      "status": "completed",
+      "version": "0.5.0",
+      "phase": "v0.5",
+      "area": "scanner",
+      "type": "Changed",
+      "priority": "high"
+    },
+    {
+      "id": "scanner-tests",
+      "title": "Scanner characterization tests",
+      "description": "Status detection, module mismatch, replace counting under isolated git config",
+      "status": "completed",
+      "version": "0.5.0",
+      "phase": "v0.5",
+      "area": "testing",
+      "type": "Added",
+      "priority": "medium"
+    },
+    {
+      "id": "scanner-on-library",
+      "title": "Scanner discovery on gogit.Discover",
+      "description": "Replace scanner's one-level ReadDir walk with the root library's depth-bounded discovery",
+      "status": "future",
+      "phase": "future",
+      "area": "scanner",
+      "type": "Changed",
+      "priority": "medium"
+    },
+    {
+      "id": "log-bodies",
+      "title": "Optional commit body extraction in Log",
+      "description": "Opt-in %b field for consumers needing full messages (e.g. structured-changelog migration)",
+      "status": "future",
+      "phase": "future",
+      "area": "library",
+      "type": "Added",
+      "priority": "low"
+    },
+    {
+      "id": "gitlog-migration",
+      "title": "structured-changelog gitlog migration",
+      "description": "Migrate structured-changelog's gitlog package onto the gogit library (cross-repo)",
+      "status": "future",
+      "phase": "future",
+      "area": "library",
+      "type": "Changed",
+      "priority": "low"
     }
   ],
-
   "sections": [
     {
       "id": "overview",
       "title": "Overview",
       "order": 1,
       "content": [
-        {"type": "text", "value": "gitscan is a CLI tool to scan multiple Git repositories and identify repos that need attention. It helps prioritize which repos to update, commit, and push."}
+        {
+          "type": "text",
+          "value": "gitscan is a CLI tool to scan multiple Git repositories and identify repos that need attention. It helps prioritize which repos to update, commit, and push."
+        }
       ]
     }
   ],
-
   "version_history": [
-    {"version": "0.1.0", "date": "2026-01-17", "status": "completed", "summary": "Initial release with core scanning functionality"},
-    {"version": "0.2.0", "date": null, "status": "planned", "summary": "Quality improvements and test coverage"},
-    {"version": "0.3.0", "date": null, "status": "planned", "summary": "Enhanced CLI and UX"}
+    {
+      "version": "0.1.0",
+      "date": "2026-01-17",
+      "status": "completed",
+      "summary": "Initial release with core scanning functionality"
+    },
+    {
+      "version": "0.2.0",
+      "date": null,
+      "status": "planned",
+      "summary": "Quality improvements and test coverage"
+    },
+    {
+      "version": "0.3.0",
+      "date": null,
+      "status": "planned",
+      "summary": "Enhanced CLI and UX"
+    }
   ]
 }
