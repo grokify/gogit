@@ -1,11 +1,45 @@
 {
   "irVersion": "1.0",
-  "project": "gitscan",
-  "repository": "https://github.com/grokify/gitscan",
+  "project": "gogit",
+  "repository": "https://github.com/grokify/gogit",
   "versioning": "semver",
   "commitConvention": "conventional",
   "maintainers": ["grokify"],
   "releases": [
+    {
+      "version": "v0.5.0",
+      "date": "2026-07-18",
+      "highlights": [
+        { "description": "Repository renamed from gitscan to gogit: a generic Git base library for Go, with the gitscan CLI preserved at cmd/gitscan", "commit": "744e28f" },
+        { "description": "New core git library: repository discovery, commit-log parsing with Co-authored-by trailers and change stats, branch/origin metadata, tag dates", "commit": "2e3097e" },
+        { "description": "Workflow compliance scanning against a reference repository", "commit": "756baaf" }
+      ],
+      "breaking": [
+        { "description": "Module path changed from github.com/grokify/gitscan to github.com/grokify/gogit; the root package is now the gogit library and the CLI entrypoint moved to cmd/gitscan (install with go install github.com/grokify/gogit/cmd/gitscan@latest)", "commit": "744e28f" }
+      ],
+      "added": [
+        { "description": "gogit.Discover: depth-bounded repository discovery that does not descend into repositories", "commit": "2e3097e" },
+        { "description": "Repo.Log: commit-log parsing with calendar-date filtering, author/committer identities, subjects, trailers, and --numstat change stats", "commit": "2e3097e" },
+        { "description": "Commit.CoAuthors: Co-authored-by trailer extraction to name/email signatures", "commit": "2e3097e" },
+        { "description": "Repo.Branch, Repo.OriginURL, and NormalizeRemoteURL (https/ssh/git remotes to host/path identifiers)", "commit": "2e3097e" },
+        { "description": "Repo.Tags and Repo.TagsWithDates (tag creation dates via for-each-ref)", "commit": "2e3097e" },
+        { "description": "scanner: workflow compliance checking against a reference repo via --check-workflows and --ref-repo", "commit": "756baaf" },
+        { "description": "since --unpushed/-u flag: filter repos with uncommitted or unpushed changes", "commit": "d219b43" }
+      ],
+      "dependencies": [
+        { "description": "go-git v5.19.1, mogo v0.74.6, yaml.v3 v3.0.1; GitHub Actions checkout/setup-go pinned to v6", "commit": "744e28f" }
+      ],
+      "infrastructure": [
+        { "description": "CI migrated to shared workflow files (go-ci, go-lint, go-sast-codeql)", "commit": "9521180" }
+      ],
+      "tests": [
+        { "description": "Core library tests with fixture repositories in isolated git config (no inherited signing, hooks, or templates)", "commit": "816e6b9" }
+      ],
+      "documentation": [
+        { "description": "README reframed for the gogit library with the gitscan CLI as a bundled tool", "commit": "2485217" },
+        { "description": "Added docs/releases/v0.5.0.md and MkDocs site scaffolding", "commit": "" }
+      ]
+    },
     {
       "version": "v0.4.0",
       "date": "2026-02-21",
