@@ -3,12 +3,12 @@ package scanner
 import (
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
+
+	"github.com/grokify/gogit"
 )
 
 // CLIGitBackend implements GitBackend using git CLI commands.
-// This is the fallback when go-git has issues or for compatibility.
 type CLIGitBackend struct{}
 
 // NewCLIGitBackend creates a new CLI git backend.
@@ -16,14 +16,10 @@ func NewCLIGitBackend() *CLIGitBackend {
 	return &CLIGitBackend{}
 }
 
-// IsRepo checks if the path is a git repository by looking for .git directory.
+// IsRepo checks if the path is a git repository. Delegates to the root
+// gogit library, which also recognizes worktree gitfiles.
 func (c *CLIGitBackend) IsRepo(path string) bool {
-	gitPath := filepath.Join(path, ".git")
-	info, err := os.Stat(gitPath)
-	if err != nil {
-		return false
-	}
-	return info.IsDir()
+	return gogit.IsRepo(path)
 }
 
 // GetStatus uses `git status --porcelain -b` to check both uncommitted changes and unpushed commits.
@@ -32,6 +28,7 @@ func (c *CLIGitBackend) IsRepo(path string) bool {
 //   - Remaining lines: file status (if any uncommitted changes)
 func (c *CLIGitBackend) GetStatus(repoPath string, checkUnpushed bool) (hasUncommitted, hasUnpushed bool) {
 	cmd := exec.Command("git", "-C", repoPath, "status", "--porcelain", "-b")
+	cmd.Env = append(os.Environ(), "LC_ALL=C", "GIT_TERMINAL_PROMPT=0")
 	output, err := cmd.Output()
 	if err != nil {
 		return false, false

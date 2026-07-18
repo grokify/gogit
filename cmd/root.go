@@ -43,7 +43,6 @@ func init() {
 	rootCmd.Flags().BoolVar(&showClean, "show-clean", false, "Show repos with no issues")
 	rootCmd.Flags().BoolVar(&showSummary, "summary", true, "Show summary at the end")
 	rootCmd.Flags().StringVarP(&format, "format", "f", "list", "Output format: list or table")
-	rootCmd.Flags().BoolVar(&useGoGit, "go-git", false, "Use go-git library instead of git CLI (pure Go, no process spawning)")
 	rootCmd.Flags().BoolVar(&checkWorkflows, "check-workflows", false, "Check workflow compliance against reference repo")
 	rootCmd.Flags().StringVar(&refRepo, "ref-repo", "plexusone/.github", "Reference workflow repository for compliance checking")
 }
@@ -94,7 +93,7 @@ func runScan(cmd *cobra.Command, args []string) error {
 	}
 
 	opts := scanner.ScanOptions{
-		GitBackend: createGitBackend(useGoGit),
+		GitBackend: createGitBackend(),
 	}
 
 	// Configure workflow checking if enabled

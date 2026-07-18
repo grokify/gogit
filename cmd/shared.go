@@ -15,7 +15,6 @@ import (
 var (
 	dirPath        string
 	recurse        bool
-	useGoGit       bool
 	checkWorkflows bool
 	refRepo        string
 )
@@ -53,11 +52,8 @@ func resolvePath(path string) (string, error) {
 	return absPath, nil
 }
 
-// createGitBackend returns the appropriate git backend based on the useGoGit flag.
-func createGitBackend(goGit bool) scanner.GitBackend {
-	if goGit {
-		return scanner.NewGoGitBackend()
-	}
+// createGitBackend returns the git backend (git CLI).
+func createGitBackend() scanner.GitBackend {
 	return scanner.NewCLIGitBackend()
 }
 

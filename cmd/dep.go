@@ -25,7 +25,6 @@ Examples:
 }
 
 func init() {
-	depCmd.Flags().BoolVar(&useGoGit, "go-git", false, "Use go-git library instead of git CLI")
 	depCmd.Flags().BoolVarP(&recurse, "recurse", "r", false, "Check nested go.mod files")
 	rootCmd.AddCommand(depCmd)
 }
@@ -68,7 +67,7 @@ func runDep(cmd *cobra.Command, args []string) error {
 
 	opts := scanner.ScanOptions{
 		Recurse:    recurse,
-		GitBackend: createGitBackend(useGoGit),
+		GitBackend: createGitBackend(),
 	}
 	results, err := scanner.ScanDirectoryWithProgress(absPath, progressFn, opts)
 	if err != nil {

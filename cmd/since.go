@@ -42,7 +42,6 @@ Examples:
 func init() {
 	sinceCmd.Flags().StringVar(&sinceDepFilter, "dep", "", "Also filter by dependency (AND logic)")
 	sinceCmd.Flags().BoolVarP(&sinceUnpushedOnly, "unpushed", "u", false, "Only show repos with uncommitted changes or unpushed commits")
-	sinceCmd.Flags().BoolVar(&useGoGit, "go-git", false, "Use go-git library instead of git CLI")
 	sinceCmd.Flags().BoolVarP(&recurse, "recurse", "r", false, "Check nested go.mod files")
 	rootCmd.AddCommand(sinceCmd)
 }
@@ -91,7 +90,7 @@ func runSince(cmd *cobra.Command, args []string) error {
 		Recurse:       recurse,
 		CheckModTime:  true,
 		CheckUnpushed: sinceUnpushedOnly,
-		GitBackend:    createGitBackend(useGoGit),
+		GitBackend:    createGitBackend(),
 	}
 	results, err := scanner.ScanDirectoryWithProgress(absPath, progressFn, opts)
 	if err != nil {
