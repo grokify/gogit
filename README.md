@@ -1,4 +1,28 @@
-# gitscan
+# gogit
+
+Generic, dependency-light Git ergonomics for Go, by shelling out to the
+git CLI: repository discovery, commit-log parsing with trailers
+(Co-authored-by) and change stats, calendar-date filtering, branch/origin
+metadata, remote-URL normalization, and tag dates. The base layer for
+higher-level tools — including the bundled `gitscan` CLI and the OmniDevX
+telemetry collectors — in the same way
+[gogithub](https://github.com/grokify/gogithub) underlies GitHub
+integrations.
+
+```go
+repo, _ := gogit.Open("/path/to/repo")
+commits, _ := repo.Log(ctx, gogit.LogOptions{
+    Since:        weekStart,
+    IncludeStats: true,
+})
+for _, c := range commits {
+    fmt.Println(c.Hash, c.Author.Email, c.CoAuthors(), c.Insertions)
+}
+```
+
+Renamed from `gitscan` (the CLI lives on at `cmd/gitscan`).
+
+## gitscan CLI
 
 [![Build Status][build-status-svg]][build-status-url]
 [![Lint Status][lint-status-svg]][lint-status-url]
@@ -20,13 +44,13 @@ brew install gitscan
 ### Go Install
 
 ```bash
-go install github.com/grokify/gitscan@latest
+go install github.com/grokify/gogit/cmd/gitscan@latest
 ```
 
 ### Build from Source
 
 ```bash
-git clone https://github.com/grokify/gitscan.git
+git clone https://github.com/grokify/gogit.git
 cd gitscan
 go build -o gitscan .
 ```
@@ -264,17 +288,17 @@ The git CLI backend is recommended for most use cases. Use `--go-git` in environ
 
 MIT
 
- [build-status-svg]: https://github.com/grokify/gitscan/actions/workflows/ci.yaml/badge.svg?branch=main
- [build-status-url]: https://github.com/grokify/gitscan/actions/workflows/ci.yaml
- [lint-status-svg]: https://github.com/grokify/gitscan/actions/workflows/lint.yaml/badge.svg?branch=main
- [lint-status-url]: https://github.com/grokify/gitscan/actions/workflows/lint.yaml
- [goreport-svg]: https://goreportcard.com/badge/github.com/grokify/gitscan
- [goreport-url]: https://goreportcard.com/report/github.com/grokify/gitscan
- [docs-godoc-svg]: https://pkg.go.dev/badge/github.com/grokify/gitscan
- [docs-godoc-url]: https://pkg.go.dev/github.com/grokify/gitscan
+ [build-status-svg]: https://github.com/grokify/gogit/actions/workflows/ci.yaml/badge.svg?branch=main
+ [build-status-url]: https://github.com/grokify/gogit/actions/workflows/ci.yaml
+ [lint-status-svg]: https://github.com/grokify/gogit/actions/workflows/lint.yaml/badge.svg?branch=main
+ [lint-status-url]: https://github.com/grokify/gogit/actions/workflows/lint.yaml
+ [goreport-svg]: https://goreportcard.com/badge/github.com/grokify/gogit
+ [goreport-url]: https://goreportcard.com/report/github.com/grokify/gogit
+ [docs-godoc-svg]: https://pkg.go.dev/badge/github.com/grokify/gogit
+ [docs-godoc-url]: https://pkg.go.dev/github.com/grokify/gogit
  [viz-svg]: https://img.shields.io/badge/visualizaton-Go-blue.svg
  [viz-url]: https://mango-dune-07a8b7110.1.azurestaticapps.net/?repo=grokify%2Fgitscan
- [loc-svg]: https://tokei.rs/b1/github/grokify/gitscan
- [repo-url]: https://github.com/grokify/gitscan
+ [loc-svg]: https://tokei.rs/b1/github/grokify/gogit
+ [repo-url]: https://github.com/grokify/gogit
  [license-svg]: https://img.shields.io/badge/license-MIT-blue.svg
- [license-url]: https://github.com/grokify/gitscan/blob/master/LICENSE
+ [license-url]: https://github.com/grokify/gogit/blob/master/LICENSE
