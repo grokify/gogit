@@ -15,11 +15,17 @@ const (
 	recordSep = "\x1e"
 )
 
-// logFormat captures one commit per record. %(trailers:only,unfold) expands
-// each trailer onto its own line inside the final field.
-const logFormat = "%H" + fieldSep + "%an" + fieldSep + "%ae" + fieldSep + "%aI" + fieldSep +
+// logFormat begins each record with recordSep and terminates the field list
+// with a trailing fieldSep, so multi-line trailers and any following
+// numstat block are unambiguously delimited: a record is
+// RS f0 FS f1 ... f8 FS <numstat lines until the next RS>.
+const logFormat = recordSep + "%H" + fieldSep + "%an" + fieldSep + "%ae" + fieldSep + "%aI" + fieldSep +
 	"%cn" + fieldSep + "%ce" + fieldSep + "%cI" + fieldSep + "%s" + fieldSep +
-	"%(trailers:only,unfold)" + recordSep
+	"%(trailers:only,unfold)" + fieldSep
+
+// logFieldCount is the number of fieldSep-delimited parts per record: nine
+// fields plus the trailing chunk after the terminating separator.
+const logFieldCount = 10
 
 // LogOptions filters a commit-log query. Zero values leave a filter unset.
 type LogOptions struct {
@@ -128,59 +134,40 @@ func (r *Repo) Log(ctx context.Context, opts LogOptions) ([]Commit, error) {
 	return parseLog(out)
 }
 
-// parseLog splits records on recordSep; anything between a record separator
-// and the next record's first field is numstat output for the prior commit.
+// parseLog splits records on the leading recordSep; within each record the
+// terminating fieldSep cleanly separates the nine fields from any numstat
+// block that follows.
 func parseLog(out string) ([]Commit, error) {
 	var commits []Commit
-	records := strings.Split(out, recordSep)
-	for i, record := range records {
-		// The chunk before the first field separator of record i+1 is the
-		// numstat block belonging to record i; attach stats before parsing
-		// the next commit's fields.
-		fieldsStart := 0
-		if i > 0 {
-			// Records after the first begin with the previous commit's
-			// numstat block, then a newline-separated commit line.
-			if idx := strings.Index(record, fieldSep); idx < 0 {
-				// Trailing chunk: numstat of the final commit only.
-				if len(commits) > 0 {
-					applyStats(&commits[len(commits)-1], record)
-				}
-				continue
-			}
-			lastNewline := strings.LastIndex(record[:strings.Index(record, fieldSep)], "\n")
-			if lastNewline >= 0 && len(commits) > 0 {
-				applyStats(&commits[len(commits)-1], record[:lastNewline])
-				fieldsStart = lastNewline + 1
-			}
+	for i, record := range strings.Split(out, recordSep) {
+		if i == 0 {
+			continue // content before the first record marker (empty)
+		}
+		parts := strings.SplitN(record, fieldSep, logFieldCount)
+		if len(parts) != logFieldCount {
+			return nil, fmt.Errorf("gogit: malformed log record %d: %d fields", i, len(parts))
 		}
 
-		fields := strings.Split(record[fieldsStart:], fieldSep)
-		if len(fields) < 9 {
-			if strings.TrimSpace(record) == "" {
-				continue
-			}
-			return nil, fmt.Errorf("gogit: malformed log record %d: %d fields", i, len(fields))
-		}
-
-		authorDate, err := time.Parse(time.RFC3339, strings.TrimSpace(fields[3]))
+		authorDate, err := time.Parse(time.RFC3339, strings.TrimSpace(parts[3]))
 		if err != nil {
-			return nil, fmt.Errorf("gogit: parse author date %q: %w", fields[3], err)
+			return nil, fmt.Errorf("gogit: parse author date %q: %w", parts[3], err)
 		}
-		commitDate, err := time.Parse(time.RFC3339, strings.TrimSpace(fields[6]))
+		commitDate, err := time.Parse(time.RFC3339, strings.TrimSpace(parts[6]))
 		if err != nil {
-			return nil, fmt.Errorf("gogit: parse commit date %q: %w", fields[6], err)
+			return nil, fmt.Errorf("gogit: parse commit date %q: %w", parts[6], err)
 		}
 
-		commits = append(commits, Commit{
-			Hash:       strings.TrimSpace(fields[0]),
-			Author:     Signature{Name: fields[1], Email: fields[2]},
+		commit := Commit{
+			Hash:       strings.TrimSpace(parts[0]),
+			Author:     Signature{Name: parts[1], Email: parts[2]},
 			AuthorDate: authorDate,
-			Committer:  Signature{Name: fields[4], Email: fields[5]},
+			Committer:  Signature{Name: parts[4], Email: parts[5]},
 			CommitDate: commitDate,
-			Subject:    fields[7],
-			Trailers:   parseTrailers(fields[8]),
-		})
+			Subject:    parts[7],
+			Trailers:   parseTrailers(parts[8]),
+		}
+		applyStats(&commit, parts[9])
+		commits = append(commits, commit)
 	}
 	return commits, nil
 }
