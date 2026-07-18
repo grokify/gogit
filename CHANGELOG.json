@@ -15,7 +15,13 @@
         { "description": "Workflow compliance scanning against a reference repository", "commit": "756baaf" }
       ],
       "breaking": [
-        { "description": "Module path changed from github.com/grokify/gitscan to github.com/grokify/gogit; the root package is now the gogit library and the CLI entrypoint moved to cmd/gitscan (install with go install github.com/grokify/gogit/cmd/gitscan@latest)", "commit": "744e28f" }
+        { "description": "Module path changed from github.com/grokify/gitscan to github.com/grokify/gogit; the root package is now the gogit library and the CLI entrypoint moved to cmd/gitscan (install with go install github.com/grokify/gogit/cmd/gitscan@latest)", "commit": "744e28f" },
+        { "description": "--go-git flag removed from all gitscan subcommands; scanner.GoGitBackend no longer exists and the go-git/v5 dependency tree is dropped from the module", "commit": "3987794" }
+      ],
+      "changed": [
+        { "description": "git execution pinned to C locale with credential prompts disabled, making error-condition detection locale-independent", "commit": "2b320c2" },
+        { "description": "scanner rebuilt on the root gogit library: IsRepo now also recognizes worktree gitfiles", "commit": "3987794" },
+        { "description": "commit-log parsing refactored to leading-sentinel records, removing lookahead numstat attribution", "commit": "f0273a5" }
       ],
       "added": [
         { "description": "gogit.Discover: depth-bounded repository discovery that does not descend into repositories", "commit": "2e3097e" },
@@ -33,7 +39,8 @@
         { "description": "CI migrated to shared workflow files (go-ci, go-lint, go-sast-codeql)", "commit": "9521180" }
       ],
       "tests": [
-        { "description": "Core library tests with fixture repositories in isolated git config (no inherited signing, hooks, or templates)", "commit": "816e6b9" }
+        { "description": "Core library tests with fixture repositories in isolated git config (no inherited signing, hooks, or templates)", "commit": "816e6b9" },
+        { "description": "scanner characterization tests: status detection, module mismatch, replace counting", "commit": "c9a012c" }
       ],
       "documentation": [
         { "description": "README reframed for the gogit library with the gitscan CLI as a bundled tool", "commit": "2485217" },
