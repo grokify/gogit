@@ -473,6 +473,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#reliability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reliability
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#installation" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -721,6 +732,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#reliability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reliability
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#installation" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -782,6 +804,10 @@ AI-attribution analytics in OmniDevX).</p>
 </code></pre></div>
 <p>GitHub redirects <code>grokify/gitscan</code> URLs to <code>grokify/gogit</code>; update remotes
 and imports at your convenience.</p>
+<p>The <code>--go-git</code> flag is removed from all gitscan subcommands: the git CLI
+backend (already the default) is now the only backend, and the go-git/v5
+dependency tree is dropped from the module — a substantially smaller
+dependency graph for library consumers.</p>
 <h2 id="highlights">Highlights</h2>
 <h3 id="core-git-library-new">Core git library (new)</h3>
 <ul>
@@ -811,6 +837,14 @@ repository (default <code>plexusone/.github</code>) via <code>--check-workflows<
 <h3 id="since-unpushed">since --unpushed</h3>
 <p><code>gitscan since &lt;duration&gt; --unpushed</code> filters repositories with
 uncommitted or unpushed changes (AND logic with existing filters).</p>
+<h2 id="reliability">Reliability</h2>
+<ul>
+<li>git execution is pinned to <code>LC_ALL=C</code> with <code>GIT_TERMINAL_PROMPT=0</code>, so
+  error-condition detection is locale-independent and no invocation can
+  hang on a credential prompt.</li>
+<li>Commit-log records use a leading sentinel delimiter, making trailer and
+  numstat parsing unambiguous.</li>
+</ul>
 <h2 id="installation">Installation</h2>
 <p>Library:</p>
 <div class="highlight"><pre><span></span><code>go<span class="w"> </span>get<span class="w"> </span>github.com/grokify/gogit@v0.5.0
