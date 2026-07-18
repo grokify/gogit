@@ -330,7 +330,7 @@
       "content": [
         {
           "type": "text",
-          "value": "gitscan is a CLI tool to scan multiple Git repositories and identify repos that need attention. It helps prioritize which repos to update, commit, and push."
+          "value": "gogit is a generic, dependency-light Git base library for Go (discovery, commit-log parsing with trailers, metadata), bundling the gitscan CLI at cmd/gitscan for scanning many repositories."
         }
       ]
     }
