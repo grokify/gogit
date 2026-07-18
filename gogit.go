@@ -110,9 +110,13 @@ func (r *Repo) OriginURL(ctx context.Context) (string, error) {
 }
 
 // git runs a git subcommand against the repository and returns stdout.
+// LC_ALL=C pins git's messages to English so error-condition detection is
+// locale-independent, and GIT_TERMINAL_PROMPT=0 ensures no command can
+// hang waiting for credentials.
 func (r *Repo) git(ctx context.Context, args ...string) (string, error) {
 	fullArgs := append([]string{"-C", r.path}, args...)
 	cmd := exec.CommandContext(ctx, "git", fullArgs...)
+	cmd.Env = append(os.Environ(), "LC_ALL=C", "GIT_TERMINAL_PROMPT=0")
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
