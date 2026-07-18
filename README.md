@@ -1,5 +1,31 @@
 # gogit
 
+
+[![Go CI][go-ci-svg]][go-ci-url]
+[![Go Lint][go-lint-svg]][go-lint-url]
+[![Go SAST][go-sast-svg]][go-sast-url]
+[![Docs][docs-godoc-svg]][docs-godoc-url]
+[![Docs][docs-mkdoc-svg]][docs-mkdoc-url]
+[![Visualization][viz-svg]][viz-url]
+[![License][license-svg]][license-url]
+
+ [go-ci-svg]: https://github.com/grokify/gogithub/actions/workflows/go-ci.yaml/badge.svg?branch=main
+ [go-ci-url]: https://github.com/grokify/gogithub/actions/workflows/go-ci.yaml
+ [go-lint-svg]: https://github.com/grokify/gogithub/actions/workflows/go-lint.yaml/badge.svg?branch=main
+ [go-lint-url]: https://github.com/grokify/gogithub/actions/workflows/go-lint.yaml
+ [go-sast-svg]: https://github.com/grokify/gogithub/actions/workflows/go-sast-codeql.yaml/badge.svg?branch=main
+ [go-sast-url]: https://github.com/grokify/gogithub/actions/workflows/go-sast-codeql.yaml
+ [docs-godoc-svg]: https://pkg.go.dev/badge/github.com/grokify/gogithub
+ [docs-godoc-url]: https://pkg.go.dev/github.com/grokify/gogithub
+ [docs-mkdoc-svg]: https://img.shields.io/badge/Go-dev%20guide-blue.svg
+ [docs-mkdoc-url]: https://grokify.github.io/gogithub
+ [viz-svg]: https://img.shields.io/badge/visualizaton-Go-blue.svg
+ [viz-url]: https://mango-dune-07a8b7110.1.azurestaticapps.net/?repo=grokify%2Fgogithub
+ [loc-svg]: https://tokei.rs/b1/github/grokify/gogithub
+ [repo-url]: https://github.com/grokify/gogithub
+ [license-svg]: https://img.shields.io/badge/license-MIT-blue.svg
+ [license-url]: https://github.com/grokify/gogithub/blob/main/LICENSE
+ 
 Generic, dependency-light Git ergonomics for Go, by shelling out to the
 git CLI: repository discovery, commit-log parsing with trailers
 (Co-authored-by) and change stats, calendar-date filtering, branch/origin
@@ -23,12 +49,6 @@ for _, c := range commits {
 Renamed from `gitscan` (the CLI lives on at `cmd/gitscan`).
 
 ## gitscan CLI
-
-[![Build Status][build-status-svg]][build-status-url]
-[![Lint Status][lint-status-svg]][lint-status-url]
-[![Go Report Card][goreport-svg]][goreport-url]
-[![Docs][docs-godoc-svg]][docs-godoc-url]
-[![Visualization][viz-svg]][viz-url]
 
 A CLI tool to scan multiple Git repositories and identify repos that need attention. Helps prioritize which repos to update, commit, and push.
 
