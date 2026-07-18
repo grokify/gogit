@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/grokify/gitscan/scanner"
+	"github.com/grokify/gogit/scanner"
 	"github.com/grokify/mogo/fmt/progress"
 	"github.com/spf13/cobra"
 )
@@ -44,6 +44,8 @@ func init() {
 	rootCmd.Flags().BoolVar(&showSummary, "summary", true, "Show summary at the end")
 	rootCmd.Flags().StringVarP(&format, "format", "f", "list", "Output format: list or table")
 	rootCmd.Flags().BoolVar(&useGoGit, "go-git", false, "Use go-git library instead of git CLI (pure Go, no process spawning)")
+	rootCmd.Flags().BoolVar(&checkWorkflows, "check-workflows", false, "Check workflow compliance against reference repo")
+	rootCmd.Flags().StringVar(&refRepo, "ref-repo", "plexusone/.github", "Reference workflow repository for compliance checking")
 }
 
 // Execute runs the root command
@@ -94,6 +96,17 @@ func runScan(cmd *cobra.Command, args []string) error {
 	opts := scanner.ScanOptions{
 		GitBackend: createGitBackend(useGoGit),
 	}
+
+	// Configure workflow checking if enabled
+	if checkWorkflows {
+		opts.Workflow = scanner.WorkflowCheckOptions{
+			Enabled:       true,
+			RefRepo:       refRepo,
+			RefBranch:     "main",
+			RequiredTypes: scanner.DefaultGoWorkflowTypes(),
+		}
+	}
+
 	results, err := scanner.ScanDirectoryWithProgress(absPath, progressFn, opts)
 	if err != nil {
 		return fmt.Errorf("error scanning directory: %w", err)
@@ -117,11 +130,14 @@ func runScan(cmd *cobra.Command, args []string) error {
 
 	// Display results based on format
 	var (
-		totalRepos       int
-		reposWithIssues  int
-		uncommittedCount int
-		replaceCount     int
-		mismatchCount    int
+		totalRepos           int
+		reposWithIssues      int
+		uncommittedCount     int
+		replaceCount         int
+		mismatchCount        int
+		workflowFullCount    int
+		workflowPartialCount int
+		workflowNoneCount    int
 	)
 
 	if format == "table" {
@@ -146,14 +162,31 @@ func runScan(cmd *cobra.Command, args []string) error {
 			}
 		}
 
+		// Track workflow compliance stats
+		if checkWorkflows {
+			switch result.WorkflowCompliance.ComplianceLevel {
+			case "full":
+				workflowFullCount++
+			case "partial":
+				workflowPartialCount++
+			case "none":
+				workflowNoneCount++
+			}
+		}
+
 		// Show repos with issues, or clean repos if requested
-		if hasIssues || showClean {
+		// Show repos with issues, workflow compliance issues, or clean repos if requested
+		showRepo := hasIssues || showClean
+		if checkWorkflows && result.WorkflowCompliance.ComplianceLevel != "full" {
+			showRepo = true
+		}
+		if showRepo {
 			rowNum++
 			if format == "table" {
 				printTableRow(rowNum, result)
 			} else {
 				internalDeps := scanner.GetInternalDeps(result, results)
-				printResult(rowNum, result, maxNameLen, internalDeps)
+				printResult(rowNum, result, maxNameLen, internalDeps, checkWorkflows)
 			}
 		}
 	}
@@ -165,6 +198,13 @@ func runScan(cmd *cobra.Command, args []string) error {
 		fmt.Printf("  - Uncommitted changes: %d\n", uncommittedCount)
 		fmt.Printf("  - Replace directives:  %d\n", replaceCount)
 		fmt.Printf("  - Module mismatches:   %d\n", mismatchCount)
+		if checkWorkflows {
+			fmt.Println()
+			fmt.Println("Workflow Compliance:")
+			fmt.Printf("  - Full:    %d (%.1f%%)\n", workflowFullCount, percent(workflowFullCount, totalRepos))
+			fmt.Printf("  - Partial: %d (%.1f%%)\n", workflowPartialCount, percent(workflowPartialCount, totalRepos))
+			fmt.Printf("  - None:    %d (%.1f%%)\n", workflowNoneCount, percent(workflowNoneCount, totalRepos))
+		}
 	}
 
 	return nil
@@ -206,7 +246,7 @@ func printTableRow(num int, r scanner.RepoResult) {
 		num, r.Name, uncommitted, replace, mismatch, git, gomod)
 }
 
-func printResult(num int, r scanner.RepoResult, maxNameLen int, internalDeps []string) {
+func printResult(num int, r scanner.RepoResult, maxNameLen int, internalDeps []string, showWorkflow bool) {
 	var issues []string
 	if r.HasUncommittedChanges {
 		issues = append(issues, "uncommitted")
@@ -222,6 +262,18 @@ func printResult(num int, r scanner.RepoResult, maxNameLen int, internalDeps []s
 	}
 	if !r.HasGoMod {
 		issues = append(issues, "no-gomod")
+	}
+
+	// Add workflow compliance status
+	if showWorkflow {
+		switch r.WorkflowCompliance.ComplianceLevel {
+		case "full":
+			issues = append(issues, "wf:✓")
+		case "partial":
+			issues = append(issues, "wf:~")
+		case "none":
+			issues = append(issues, "wf:✗")
+		}
 	}
 
 	depStr := ""
@@ -245,4 +297,11 @@ func joinIssues(issues []string) string {
 		result += issue
 	}
 	return result
+}
+
+func percent(count, total int) float64 {
+	if total == 0 {
+		return 0
+	}
+	return float64(count) / float64(total) * 100
 }

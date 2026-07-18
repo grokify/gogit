@@ -31,9 +31,10 @@ type RepoResult struct {
 	HasModuleMismatch     bool
 	ModuleName            string
 	ReplaceCount          int
-	Dependencies          []string      // Dependencies from root go.mod
-	GoModFiles            []GoModResult // All go.mod files (when recurse=true)
-	LatestModTime         time.Time     // Most recent file modification time
+	Dependencies          []string           // Dependencies from root go.mod
+	GoModFiles            []GoModResult      // All go.mod files (when recurse=true)
+	LatestModTime         time.Time          // Most recent file modification time
+	WorkflowCompliance    WorkflowCompliance // Workflow compliance status (when workflow check enabled)
 }
 
 // HasDependency checks if the repo depends on the given module path.
@@ -71,11 +72,12 @@ type ProgressFunc func(current, total int, name string)
 
 // ScanOptions configures the scanning behavior.
 type ScanOptions struct {
-	Recurse       bool       // Search for nested go.mod files
-	CheckModTime  bool       // Compute latest modification time (expensive)
-	CheckUnpushed bool       // Check for unpushed commits
-	Workers       int        // Number of parallel workers (0 = GOMAXPROCS)
-	GitBackend    GitBackend // Git backend to use (nil = default go-git backend)
+	Recurse       bool                 // Search for nested go.mod files
+	CheckModTime  bool                 // Compute latest modification time (expensive)
+	CheckUnpushed bool                 // Check for unpushed commits
+	Workers       int                  // Number of parallel workers (0 = GOMAXPROCS)
+	GitBackend    GitBackend           // Git backend to use (nil = default go-git backend)
+	Workflow      WorkflowCheckOptions // Workflow compliance checking options
 }
 
 // CountDirectories counts the number of scannable directories.
@@ -247,6 +249,11 @@ func analyzeRepo(repoPath, name string, opts ScanOptions) RepoResult {
 		}
 	}
 
+	// Check workflow compliance if enabled
+	if opts.Workflow.Enabled {
+		result.WorkflowCompliance = CheckWorkflowCompliance(repoPath, opts.Workflow)
+	}
+
 	return result
 }
 
@@ -364,7 +371,7 @@ func parseRequireLine(line string) string {
 }
 
 // moduleMatchesPath checks if the module name ends with the directory name.
-// For example: github.com/grokify/gitscan should match directory "gitscan"
+// For example: github.com/grokify/gogit should match directory "gitscan"
 func moduleMatchesPath(moduleName, dirName string) bool {
 	// Get the last segment of the module path
 	parts := strings.Split(moduleName, "/")
