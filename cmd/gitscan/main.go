@@ -1,6 +1,6 @@
 package main
 
-import "github.com/grokify/gitscan/cmd"
+import "github.com/grokify/gogit/cmd"
 
 func main() {
 	cmd.Execute()

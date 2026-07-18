@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/grokify/gitscan/scanner"
+	"github.com/grokify/gogit/scanner"
 	"github.com/grokify/mogo/fmt/progress"
 	"github.com/spf13/cobra"
 )

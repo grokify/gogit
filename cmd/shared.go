@@ -8,14 +8,16 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/grokify/gitscan/scanner"
+	"github.com/grokify/gogit/scanner"
 )
 
 // Common flag variables shared across subcommands
 var (
-	dirPath  string
-	recurse  bool
-	useGoGit bool
+	dirPath        string
+	recurse        bool
+	useGoGit       bool
+	checkWorkflows bool
+	refRepo        string
 )
 
 // resolvePath expands ~ and resolves to an absolute path, then validates it exists as a directory.
