@@ -33,6 +33,10 @@ type LogOptions struct {
 	// treats both bounds inclusively at second resolution).
 	Since time.Time
 	Until time.Time
+	// SinceCommit limits output to commits reachable from HEAD but not
+	// from the given commit SHA (i.e., "sha..HEAD"). Used for incremental
+	// ingestion with high-water marks.
+	SinceCommit string
 	// Author filters by author name or email (git regex semantics).
 	Author string
 	// NoMerges excludes merge commits.
@@ -42,6 +46,9 @@ type LogOptions struct {
 	// IncludeStats adds per-commit insertions/deletions/files-changed via
 	// --numstat. Costs proportionally more; leave false when not needed.
 	IncludeStats bool
+	// Reverse returns commits in chronological order (oldest first)
+	// instead of the default newest-first.
+	Reverse bool
 }
 
 // Signature is an author or committer identity.
@@ -100,7 +107,8 @@ func parseSignature(s string) (Signature, bool) {
 	}, true
 }
 
-// Log returns commits matching opts, newest first (git log order).
+// Log returns commits matching opts, newest first (git log order) unless
+// Reverse is set.
 func (r *Repo) Log(ctx context.Context, opts LogOptions) ([]Commit, error) {
 	args := []string{"log", "--format=" + logFormat}
 	if !opts.Since.IsZero() {
@@ -120,6 +128,12 @@ func (r *Repo) Log(ctx context.Context, opts LogOptions) ([]Commit, error) {
 	}
 	if opts.IncludeStats {
 		args = append(args, "--numstat")
+	}
+	if opts.Reverse {
+		args = append(args, "--reverse")
+	}
+	if opts.SinceCommit != "" {
+		args = append(args, opts.SinceCommit+"..HEAD")
 	}
 
 	out, err := r.git(ctx, args...)

@@ -256,6 +256,82 @@ func TestLogEmptyRepo(t *testing.T) {
 	}
 }
 
+func TestLogSinceCommit(t *testing.T) {
+	dir := t.TempDir()
+	initRepo(t, dir)
+	commitFile(t, dir, "a.txt", "one\n", "chore: first")
+	commitFile(t, dir, "b.txt", "two\n", "chore: second")
+	commitFile(t, dir, "c.txt", "three\n", "chore: third")
+
+	r, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+
+	// Get all commits to find the first one's hash.
+	all, err := r.Log(ctx, LogOptions{Reverse: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(all) != 3 {
+		t.Fatalf("all commits: got %d, want 3", len(all))
+	}
+
+	// SinceCommit should return only commits after the first.
+	since, err := r.Log(ctx, LogOptions{SinceCommit: all[0].Hash})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(since) != 2 {
+		t.Fatalf("since first: got %d, want 2", len(since))
+	}
+
+	// SinceCommit with the second commit should return only the third.
+	since, err = r.Log(ctx, LogOptions{SinceCommit: all[1].Hash})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(since) != 1 {
+		t.Fatalf("since second: got %d, want 1", len(since))
+	}
+
+	// SinceCommit with the last commit should return nothing.
+	since, err = r.Log(ctx, LogOptions{SinceCommit: all[2].Hash})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(since) != 0 {
+		t.Fatalf("since last: got %d, want 0", len(since))
+	}
+}
+
+func TestLogReverse(t *testing.T) {
+	dir := t.TempDir()
+	initRepo(t, dir)
+	commitFile(t, dir, "a.txt", "one\n", "chore: first")
+	commitFile(t, dir, "b.txt", "two\n", "chore: second")
+
+	r, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	commits, err := r.Log(context.Background(), LogOptions{Reverse: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(commits) != 2 {
+		t.Fatalf("got %d, want 2", len(commits))
+	}
+	if commits[0].Subject != "chore: first" {
+		t.Errorf("reverse[0]: got %q, want 'chore: first'", commits[0].Subject)
+	}
+	if commits[1].Subject != "chore: second" {
+		t.Errorf("reverse[1]: got %q, want 'chore: second'", commits[1].Subject)
+	}
+}
+
 func TestParseSignature(t *testing.T) {
 	cases := []struct {
 		in    string
