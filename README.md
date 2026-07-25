@@ -1,6 +1,5 @@
 # gogit
 
-
 [![Go CI][go-ci-svg]][go-ci-url]
 [![Go Lint][go-lint-svg]][go-lint-url]
 [![Go SAST][go-sast-svg]][go-sast-url]
@@ -9,29 +8,30 @@
 [![Visualization][viz-svg]][viz-url]
 [![License][license-svg]][license-url]
 
- [go-ci-svg]: https://github.com/grokify/gogithub/actions/workflows/go-ci.yaml/badge.svg?branch=main
- [go-ci-url]: https://github.com/grokify/gogithub/actions/workflows/go-ci.yaml
- [go-lint-svg]: https://github.com/grokify/gogithub/actions/workflows/go-lint.yaml/badge.svg?branch=main
- [go-lint-url]: https://github.com/grokify/gogithub/actions/workflows/go-lint.yaml
- [go-sast-svg]: https://github.com/grokify/gogithub/actions/workflows/go-sast-codeql.yaml/badge.svg?branch=main
- [go-sast-url]: https://github.com/grokify/gogithub/actions/workflows/go-sast-codeql.yaml
- [docs-godoc-svg]: https://pkg.go.dev/badge/github.com/grokify/gogithub
- [docs-godoc-url]: https://pkg.go.dev/github.com/grokify/gogithub
- [docs-mkdoc-svg]: https://img.shields.io/badge/Go-dev%20guide-blue.svg
- [docs-mkdoc-url]: https://grokify.github.io/gogithub
- [viz-svg]: https://img.shields.io/badge/visualizaton-Go-blue.svg
- [viz-url]: https://mango-dune-07a8b7110.1.azurestaticapps.net/?repo=grokify%2Fgogithub
- [loc-svg]: https://tokei.rs/b1/github/grokify/gogithub
- [repo-url]: https://github.com/grokify/gogithub
+ [go-ci-svg]: https://github.com/grokify/gogit/actions/workflows/go-ci.yaml/badge.svg?branch=main
+ [go-ci-url]: https://github.com/grokify/gogit/actions/workflows/go-ci.yaml
+ [go-lint-svg]: https://github.com/grokify/gogit/actions/workflows/go-lint.yaml/badge.svg?branch=main
+ [go-lint-url]: https://github.com/grokify/gogit/actions/workflows/go-lint.yaml
+ [go-sast-svg]: https://github.com/grokify/gogit/actions/workflows/go-sast-codeql.yaml/badge.svg?branch=main
+ [go-sast-url]: https://github.com/grokify/gogit/actions/workflows/go-sast-codeql.yaml
+ [docs-godoc-svg]: https://pkg.go.dev/badge/github.com/grokify/gogit
+ [docs-godoc-url]: https://pkg.go.dev/github.com/grokify/gogit
+ [docs-mkdoc-svg]: https://img.shields.io/badge/docs-MkDocs-blue.svg
+ [docs-mkdoc-url]: https://grokify.github.io/gogit
+ [viz-svg]: https://img.shields.io/badge/visualization-Go-blue.svg
+ [viz-url]: https://mango-dune-07a8b7110.1.azurestaticapps.net/?repo=grokify%2Fgogit
+ [loc-svg]: https://tokei.rs/b1/github/grokify/gogit
+ [repo-url]: https://github.com/grokify/gogit
  [license-svg]: https://img.shields.io/badge/license-MIT-blue.svg
- [license-url]: https://github.com/grokify/gogithub/blob/main/LICENSE
- 
+ [license-url]: https://github.com/grokify/gogit/blob/main/LICENSE
+
 Generic, dependency-light Git ergonomics for Go, by shelling out to the
 git CLI: repository discovery, commit-log parsing with trailers
-(Co-authored-by) and change stats, calendar-date filtering, branch/origin
-metadata, remote-URL normalization, and tag dates. The base layer for
-higher-level tools — including the bundled `gitscan` CLI and the OmniDevX
-telemetry collectors — in the same way
+(Co-authored-by) and change stats, AI authorship detection, conventional
+commit parsing, parallel multi-repo execution, calendar-date filtering,
+branch/origin metadata, remote-URL normalization, and tag dates. The base
+layer for higher-level tools — including the bundled `gitscan` CLI and
+the OmniDevX telemetry collectors — in the same way
 [gogithub](https://github.com/grokify/gogithub) underlies GitHub
 integrations.
 
@@ -40,11 +40,32 @@ repo, _ := gogit.Open("/path/to/repo")
 commits, _ := repo.Log(ctx, gogit.LogOptions{
     Since:        weekStart,
     IncludeStats: true,
+    Reverse:      true,
 })
 for _, c := range commits {
-    fmt.Println(c.Hash, c.Author.Email, c.CoAuthors(), c.Insertions)
+    attr := gogit.AnalyzeAuthorship(c)
+    fmt.Println(c.Hash, c.Author.Email, attr.Tools, c.Insertions)
 }
 ```
+
+## Library Features
+
+| Feature | Entry Point | Description |
+|---------|-------------|-------------|
+| Discovery | `Discover(roots, maxDepth)` | Depth-bounded repository discovery |
+| Commit log | `Repo.Log(ctx, LogOptions)` | Parsed commits with dates, trailers, numstat |
+| Incremental log | `LogOptions.SinceCommit` | High-water-mark ingestion (`sha..HEAD`) |
+| Reverse order | `LogOptions.Reverse` | Chronological (oldest-first) iteration |
+| Co-authors | `Commit.CoAuthors()` | `Co-authored-by` trailer extraction |
+| AI authorship | `AnalyzeAuthorship(c)` | Detect AI tools, models, and human co-authors |
+| AI provider registry | `KnownAIProviders` | Claude Code, Copilot, Gemini CLI, Cursor, Aider |
+| Conventional commits | `ParseConventionalCommit(s)` | Type, scope, breaking flag, subject |
+| Trailer lookup | `Commit.TrailerValue(key)` | Case-insensitive trailer access |
+| Parallel execution | `RunAll(ctx, paths, fn, workers)` | Generic concurrent multi-repo operations |
+| Progress reporting | `RunAllWithProgress(...)` | Parallel execution with progress callback |
+| Metadata | `Repo.Branch`, `Repo.OriginURL` | Branch name and remote URL |
+| Remote normalization | `NormalizeRemoteURL(url)` | Canonical `host/path` identifiers |
+| Tags | `Repo.Tags`, `Repo.TagsWithDates` | Tag listing with creation dates |
 
 Renamed from `gitscan` (the CLI lives on at `cmd/gitscan`).
 
