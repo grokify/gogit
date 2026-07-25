@@ -7,6 +7,46 @@
   "maintainers": ["grokify"],
   "releases": [
     {
+      "version": "v0.6.0",
+      "date": "2026-07-25",
+      "highlights": [
+        { "description": "AI authorship detection: canonical registry of AI coding assistant co-author signatures with model identity extraction", "commit": "72f9f05" },
+        { "description": "Conventional commit parsing and case-insensitive trailer lookup", "commit": "0c32782" },
+        { "description": "Generic parallel multi-repo execution with progress reporting", "commit": "6761eb2" },
+        { "description": "Incremental log ingestion via SinceCommit and chronological Reverse ordering", "commit": "c5f8456" }
+      ],
+      "added": [
+        { "description": "AIProviderByEmail and AIToolByEmail: match co-author emails to known AI providers (Claude Code, GitHub Copilot, Gemini CLI, Cursor, Aider)", "commit": "72f9f05" },
+        { "description": "ParseAIModel: extract model identity from co-author names (e.g. 'Claude Opus 4.6' → opus-4.6)", "commit": "72f9f05" },
+        { "description": "AnalyzeAuthorship: full attribution breakdown of a commit into AI tools, models, and human co-authors", "commit": "72f9f05" },
+        { "description": "KnownAIProviders: canonical registry with GitHub noreply suffix matching for variable user-ID prefixes", "commit": "72f9f05" },
+        { "description": "ParseConventionalCommit: extract type, scope, breaking flag, and subject from conventional commit messages", "commit": "0c32782" },
+        { "description": "Commit.TrailerValue and TrailerValues: case-insensitive trailer lookup by key", "commit": "0c32782" },
+        { "description": "Commit.ParseConventional: convenience method combining Commit with ParseConventionalCommit", "commit": "0c32782" },
+        { "description": "RunAll: generic concurrent execution across multiple repositories with configurable workers and context cancellation", "commit": "6761eb2" },
+        { "description": "RunAllPaths: lower-level parallel variant for non-repo directories", "commit": "6761eb2" },
+        { "description": "RunAllWithProgress: parallel execution with a ProgressFunc callback", "commit": "6761eb2" },
+        { "description": "LogOptions.SinceCommit: incremental ingestion via sha..HEAD range", "commit": "c5f8456" },
+        { "description": "LogOptions.Reverse: chronological (oldest-first) commit ordering", "commit": "c5f8456" }
+      ],
+      "tests": [
+        { "description": "AI authorship tests: provider matching, model parsing, multi-AI attribution, no-AI baseline", "commit": "72f9f05" },
+        { "description": "Conventional commit tests: type/scope/breaking parsing, non-matching subjects", "commit": "0c32782" },
+        { "description": "Trailer lookup tests: case-insensitive single and multi-value retrieval", "commit": "0c32782" },
+        { "description": "Parallel execution tests: RunAll, RunAllPaths, RunAllWithProgress, non-repo error, context cancellation", "commit": "6761eb2" },
+        { "description": "Log tests: SinceCommit incremental ranges, Reverse ordering", "commit": "c5f8456" }
+      ],
+      "dependencies": [
+        { "description": "GitHub Actions checkout bumped from v6 to v7", "commit": "67e7050" },
+        { "description": "GitHub Actions setup-go bumped from v6 to v7", "commit": "91ebd73" }
+      ],
+      "documentation": [
+        { "description": "README updated with library features table, badge URLs fixed to point to gogit", "commit": "b3454fd" },
+        { "description": "MkDocs index updated with new v0.6.0 features", "commit": "b3454fd" },
+        { "description": "Added docs/releases/v0.6.0.md release notes", "commit": "8d23d77" }
+      ]
+    },
+    {
       "version": "v0.5.0",
       "date": "2026-07-18",
       "highlights": [
