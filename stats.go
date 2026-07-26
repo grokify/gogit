@@ -14,6 +14,32 @@ type CategoryStats struct {
 	Deletions  int    `json:"deletions"`
 }
 
+// AIStats holds AI-assisted commit statistics.
+type AIStats struct {
+	TotalCommits    int                   `json:"totalCommits"`
+	AIAssistedCount int                   `json:"aiAssistedCount"`
+	AIAssistedPct   float64               `json:"aiAssistedPct"`
+	ByTool          map[string]ToolStats  `json:"byTool,omitempty"`
+	ByModel         map[string]ModelStats `json:"byModel,omitempty"`
+}
+
+// ToolStats holds per-tool commit counts.
+type ToolStats struct {
+	Tool       string `json:"tool"`
+	Commits    int    `json:"commits"`
+	Insertions int    `json:"insertions"`
+	Deletions  int    `json:"deletions"`
+}
+
+// ModelStats holds per-model commit counts (tool + model).
+type ModelStats struct {
+	Tool       string `json:"tool"`
+	Model      string `json:"model"`
+	Commits    int    `json:"commits"`
+	Insertions int    `json:"insertions"`
+	Deletions  int    `json:"deletions"`
+}
+
 // NetAdditions returns insertions minus deletions.
 func (s CategoryStats) NetAdditions() int {
 	return s.Insertions - s.Deletions
@@ -26,6 +52,7 @@ type RepoCommitStats struct {
 	Until      time.Time                `json:"until"`
 	TotalStats CategoryStats            `json:"total"`
 	ByCategory map[string]CategoryStats `json:"byCategory"`
+	AIStats    AIStats                  `json:"aiStats"`
 }
 
 // CommitStatsOptions configures commit statistics collection.
@@ -61,6 +88,10 @@ func (r *Repo) CollectCommitStats(ctx context.Context, opts CommitStatsOptions) 
 		Since:      opts.Since,
 		Until:      opts.Until,
 		ByCategory: make(map[string]CategoryStats),
+		AIStats: AIStats{
+			ByTool:  make(map[string]ToolStats),
+			ByModel: make(map[string]ModelStats),
+		},
 	}
 
 	for _, c := range commits {
@@ -79,8 +110,39 @@ func (r *Repo) CollectCommitStats(ctx context.Context, opts CommitStatsOptions) 
 		stats.TotalStats.Commits++
 		stats.TotalStats.Insertions += c.Insertions
 		stats.TotalStats.Deletions += c.Deletions
+
+		// AI co-author tracking
+		ais := c.AICoAuthors()
+		if len(ais) > 0 {
+			stats.AIStats.AIAssistedCount++
+			for _, ai := range ais {
+				// Per-tool
+				ts := stats.AIStats.ByTool[ai.Tool]
+				ts.Tool = ai.Tool
+				ts.Commits++
+				ts.Insertions += c.Insertions
+				ts.Deletions += c.Deletions
+				stats.AIStats.ByTool[ai.Tool] = ts
+
+				// Per-model (tool + model key)
+				if ai.Model != "" {
+					modelKey := ai.Tool + "/" + ai.Model
+					ms := stats.AIStats.ByModel[modelKey]
+					ms.Tool = ai.Tool
+					ms.Model = ai.Model
+					ms.Commits++
+					ms.Insertions += c.Insertions
+					ms.Deletions += c.Deletions
+					stats.AIStats.ByModel[modelKey] = ms
+				}
+			}
+		}
 	}
 	stats.TotalStats.Category = "total"
+	stats.AIStats.TotalCommits = stats.TotalStats.Commits
+	if stats.TotalStats.Commits > 0 {
+		stats.AIStats.AIAssistedPct = float64(stats.AIStats.AIAssistedCount) / float64(stats.TotalStats.Commits) * 100
+	}
 
 	return stats, nil
 }
@@ -91,6 +153,7 @@ type MultiRepoCommitStats struct {
 	Until      time.Time                `json:"until"`
 	TotalStats CategoryStats            `json:"total"`
 	ByCategory map[string]CategoryStats `json:"byCategory"`
+	AIStats    AIStats                  `json:"aiStats"`
 	ByRepo     []RepoCommitStats        `json:"byRepo"`
 	Errors     []RepoError              `json:"errors,omitempty"`
 }
@@ -137,7 +200,11 @@ func AggregateCommitStats(ctx context.Context, paths []string, opts CommitStatsO
 		Since:      opts.Since,
 		Until:      opts.Until,
 		ByCategory: make(map[string]CategoryStats),
-		ByRepo:     make([]RepoCommitStats, 0, len(results)),
+		AIStats: AIStats{
+			ByTool:  make(map[string]ToolStats),
+			ByModel: make(map[string]ModelStats),
+		},
+		ByRepo: make([]RepoCommitStats, 0, len(results)),
 	}
 
 	for _, r := range results {
@@ -165,8 +232,32 @@ func AggregateCommitStats(ctx context.Context, paths []string, opts CommitStatsO
 			existing.Deletions += s.Deletions
 			agg.ByCategory[cat] = existing
 		}
+
+		// Roll up AI stats
+		agg.AIStats.AIAssistedCount += r.Value.AIStats.AIAssistedCount
+		for tool, ts := range r.Value.AIStats.ByTool {
+			existing := agg.AIStats.ByTool[tool]
+			existing.Tool = tool
+			existing.Commits += ts.Commits
+			existing.Insertions += ts.Insertions
+			existing.Deletions += ts.Deletions
+			agg.AIStats.ByTool[tool] = existing
+		}
+		for key, ms := range r.Value.AIStats.ByModel {
+			existing := agg.AIStats.ByModel[key]
+			existing.Tool = ms.Tool
+			existing.Model = ms.Model
+			existing.Commits += ms.Commits
+			existing.Insertions += ms.Insertions
+			existing.Deletions += ms.Deletions
+			agg.AIStats.ByModel[key] = existing
+		}
 	}
 	agg.TotalStats.Category = "total"
+	agg.AIStats.TotalCommits = agg.TotalStats.Commits
+	if agg.TotalStats.Commits > 0 {
+		agg.AIStats.AIAssistedPct = float64(agg.AIStats.AIAssistedCount) / float64(agg.TotalStats.Commits) * 100
+	}
 
 	return agg
 }
