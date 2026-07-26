@@ -7,6 +7,31 @@
   "maintainers": ["grokify"],
   "releases": [
     {
+      "version": "v0.7.0",
+      "date": "2026-07-26",
+      "highlights": [
+        { "description": "AI co-author parsing: identify AI tools from Co-authored-by trailers with model version extraction", "commit": "0a33df2" },
+        { "description": "Commit/LOC aggregation by conventional-commit category with AI-assisted metrics", "commit": "3068581" }
+      ],
+      "added": [
+        { "description": "Commit.AICoAuthors: identify AI coding assistants from co-author trailers using DefaultAITools registry", "commit": "0a33df2" },
+        { "description": "Commit.AICoAuthorsWithTools: custom tool registry variant for AI co-author matching", "commit": "0a33df2" },
+        { "description": "Commit.IsAIAssisted: returns true if any co-author is a recognized AI tool", "commit": "0a33df2" },
+        { "description": "MatchAITool: match a signature against a tool pattern registry with model extraction", "commit": "0a33df2" },
+        { "description": "AICoAuthor, AIToolPattern types for structured AI co-author representation", "commit": "0a33df2" },
+        { "description": "Repo.CollectCommitStats: single-repo commit/LOC aggregation by conventional-commit type with date range filtering", "commit": "3068581" },
+        { "description": "AggregateCommitStats: parallel multi-repo commit statistics aggregation", "commit": "3068581" },
+        { "description": "RepoCommitStats, MultiRepoCommitStats: structured statistics with category breakdown and AI metrics", "commit": "3068581" },
+        { "description": "CategoryStats, AIStats, ToolStats, ModelStats: granular statistics types for commits and LOC", "commit": "3068581" },
+        { "description": "MultiRepoCommitStats.CategoryBreakdown: categories sorted by commit count descending", "commit": "3068581" },
+        { "description": "MultiRepoCommitStats.CategoryPercentages: percentage breakdown by category", "commit": "3068581" }
+      ],
+      "tests": [
+        { "description": "AI co-author tests: tool matching, model extraction, GitHub noreply suffix handling, multi-AI commits", "commit": "0a33df2" },
+        { "description": "Commit stats tests: single-repo aggregation, category breakdown, AI-assisted tracking, empty repo handling", "commit": "3068581" }
+      ]
+    },
+    {
       "version": "v0.6.0",
       "date": "2026-07-25",
       "highlights": [
