@@ -19,6 +19,11 @@ integrations.
 - **AI authorship** — `AnalyzeAuthorship` detects AI coding assistants
   (Claude Code, GitHub Copilot, Gemini CLI, Cursor, Aider) from
   `Co-authored-by` trailers, extracting tool names and model identities.
+- **AI co-author parsing** — `Commit.AICoAuthors()` identifies AI tools
+  from co-author trailers with model version extraction (e.g., "Sonnet 4").
+- **Commit stats by category** — `Repo.CollectCommitStats` and
+  `AggregateCommitStats` aggregate commit counts and LOC by conventional-
+  commit type, with AI-assisted metrics per tool and model.
 - **Conventional commits** — `ParseConventionalCommit` extracts type,
   scope, breaking flag, and subject from conventional commit messages.
 - **Trailer lookup** — `Commit.TrailerValue` and `TrailerValues` provide
@@ -58,4 +63,4 @@ go install github.com/grokify/gogit/cmd/gitscan@latest
 ```
 
 See the [README](https://github.com/grokify/gogit#readme) for full CLI
-usage, and [Releases](releases/v0.6.0.md) for version history.
+usage, and [Releases](releases/v0.7.0.md) for version history.

@@ -59,6 +59,9 @@ for _, c := range commits {
 | Co-authors | `Commit.CoAuthors()` | `Co-authored-by` trailer extraction |
 | AI authorship | `AnalyzeAuthorship(c)` | Detect AI tools, models, and human co-authors |
 | AI provider registry | `KnownAIProviders` | Claude Code, Copilot, Gemini CLI, Cursor, Aider |
+| AI co-author parsing | `Commit.AICoAuthors()` | Identify AI tools with model version extraction |
+| Commit stats | `Repo.CollectCommitStats` | Commit/LOC aggregation by conventional-commit category |
+| Multi-repo stats | `AggregateCommitStats` | Parallel aggregation with AI-assisted metrics |
 | Conventional commits | `ParseConventionalCommit(s)` | Type, scope, breaking flag, subject |
 | Trailer lookup | `Commit.TrailerValue(key)` | Case-insensitive trailer access |
 | Parallel execution | `RunAll(ctx, paths, fn, workers)` | Generic concurrent multi-repo operations |
