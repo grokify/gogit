@@ -7,6 +7,18 @@
   "maintainers": ["grokify"],
   "releases": [
     {
+      "version": "v0.8.0",
+      "date": "2026-08-02",
+      "highlights": [
+        { "description": "gitscan `dep` can now distinguish direct from transitive requirements and match module paths as a prefix, so major-versioned dependencies (e.g. go-github/vNN) can be tracked as they climb versions", "commit": "2bdc610" }
+      ],
+      "added": [
+        { "description": "[scanner] `RepoResult.DirectDependencies`, `GoModResult.DirectDependencies`, and `HasDirectDependency()` distinguish a module a repo actually requires from one only pulled in transitively as `// indirect`", "commit": "aca14dd" },
+        { "description": "[dep] `--direct-only` flag filters `gitscan dep` results to direct requirements only", "commit": "2bdc610" },
+        { "description": "[dep] `--prefix` flag matches module paths that start with the given string, useful for finding all major versions of a module (e.g. `github.com/google/go-github`) in one pass", "commit": "2bdc610" }
+      ]
+    },
+    {
       "version": "v0.7.0",
       "date": "2026-07-26",
       "highlights": [

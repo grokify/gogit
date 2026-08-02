@@ -174,6 +174,8 @@ gitscan dep <module> [directory]
 | Flag | Short | Default | Description |
 |------|-------|---------|-------------|
 | `--recurse` | `-r` | `false` | Check nested go.mod files |
+| `--direct-only` | `-D` | `false` | Only match direct requirements (excludes `// indirect`) |
+| `--prefix` | | `false` | Match module path as a prefix (e.g. to match any major version) |
 | `--go-git` | | `false` | Use go-git library instead of git CLI |
 
 ### Dep Examples
@@ -184,6 +186,12 @@ gitscan dep github.com/grokify/mogo ~/go/src/github.com/grokify
 
 # Include nested go.mod files (monorepos)
 gitscan dep github.com/grokify/mogo -r ~/go/src/github.com/grokify
+
+# Only repos that require the module themselves, not just transitively
+gitscan dep github.com/google/go-github/v88 ~/go/src/github.com/grokify --direct-only
+
+# Match any major version of a module in one pass
+gitscan dep github.com/google/go-github ~/go/src/github.com/grokify --prefix --direct-only
 ```
 
 ## Order Subcommand
