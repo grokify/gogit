@@ -92,6 +92,54 @@ func TestScanDirectory(t *testing.T) {
 	}
 }
 
+func TestHasDirectDependency(t *testing.T) {
+	root := t.TempDir()
+	fixtureRepo(t, root, "deps", `module example.com/org/deps
+
+go 1.22
+
+require (
+	github.com/direct/pkg v1.0.0
+	github.com/indirect/pkg v1.0.0 // indirect
+)
+
+require github.com/direct/single v1.0.0
+
+require github.com/indirect/single v1.0.0 // indirect
+`)
+
+	results, err := ScanDirectoryWithProgress(root, nil, ScanOptions{
+		GitBackend: NewCLIGitBackend(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	r := resultByName(results, "deps")
+	if r == nil {
+		t.Fatal("deps repo not found")
+	}
+
+	for _, dep := range []string{"github.com/direct/pkg", "github.com/indirect/pkg", "github.com/direct/single", "github.com/indirect/single"} {
+		if !r.HasDependency(dep) {
+			t.Errorf("HasDependency(%q) = false, want true", dep)
+		}
+	}
+
+	if !r.HasDirectDependency("github.com/direct/pkg") {
+		t.Error(`HasDirectDependency("github.com/direct/pkg") = false, want true`)
+	}
+	if !r.HasDirectDependency("github.com/direct/single") {
+		t.Error(`HasDirectDependency("github.com/direct/single") = false, want true`)
+	}
+	if r.HasDirectDependency("github.com/indirect/pkg") {
+		t.Error(`HasDirectDependency("github.com/indirect/pkg") = true, want false`)
+	}
+	if r.HasDirectDependency("github.com/indirect/single") {
+		t.Error(`HasDirectDependency("github.com/indirect/single") = true, want false`)
+	}
+}
+
 func TestCLIGitBackend(t *testing.T) {
 	root := t.TempDir()
 	repo := fixtureRepo(t, root, "repo", "")

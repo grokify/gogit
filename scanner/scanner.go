@@ -13,10 +13,11 @@ import (
 
 // GoModResult holds analysis results for a single go.mod file.
 type GoModResult struct {
-	Path         string   // Path to go.mod relative to repo root
-	ModuleName   string   // Module name from go.mod
-	Dependencies []string // Required module paths
-	ReplaceCount int      // Number of replace directives
+	Path               string   // Path to go.mod relative to repo root
+	ModuleName         string   // Module name from go.mod
+	Dependencies       []string // Required module paths (direct + indirect)
+	DirectDependencies []string // Required module paths without "// indirect"
+	ReplaceCount       int      // Number of replace directives
 }
 
 // RepoResult holds the analysis results for a single repository.
@@ -31,13 +32,15 @@ type RepoResult struct {
 	HasModuleMismatch     bool
 	ModuleName            string
 	ReplaceCount          int
-	Dependencies          []string           // Dependencies from root go.mod
+	Dependencies          []string           // Dependencies from root go.mod (direct + indirect)
+	DirectDependencies    []string           // Dependencies from root go.mod without "// indirect"
 	GoModFiles            []GoModResult      // All go.mod files (when recurse=true)
 	LatestModTime         time.Time          // Most recent file modification time
 	WorkflowCompliance    WorkflowCompliance // Workflow compliance status (when workflow check enabled)
 }
 
-// HasDependency checks if the repo depends on the given module path.
+// HasDependency checks if the repo depends on the given module path,
+// whether directly required or pulled in transitively as "// indirect".
 // When GoModFiles is populated (recurse mode), checks all go.mod files.
 func (r RepoResult) HasDependency(modulePath string) bool {
 	// Check root dependencies
@@ -47,6 +50,22 @@ func (r RepoResult) HasDependency(modulePath string) bool {
 	// Check nested go.mod files
 	for _, gm := range r.GoModFiles {
 		if slices.Contains(gm.Dependencies, modulePath) {
+			return true
+		}
+	}
+	return false
+}
+
+// HasDirectDependency checks if the repo directly requires the given module
+// path (i.e. the require line has no "// indirect" comment). Unlike
+// HasDependency, this excludes modules only pulled in transitively.
+// When GoModFiles is populated (recurse mode), checks all go.mod files.
+func (r RepoResult) HasDirectDependency(modulePath string) bool {
+	if slices.Contains(r.DirectDependencies, modulePath) {
+		return true
+	}
+	for _, gm := range r.GoModFiles {
+		if slices.Contains(gm.DirectDependencies, modulePath) {
 			return true
 		}
 	}
@@ -222,11 +241,12 @@ func analyzeRepo(repoPath, name string, opts ScanOptions) RepoResult {
 	goModPath := filepath.Join(repoPath, "go.mod")
 	if _, err := os.Stat(goModPath); err == nil {
 		result.HasGoMod = true
-		moduleName, replaceCount, dependencies := analyzeGoMod(goModPath)
+		moduleName, replaceCount, dependencies, directDependencies := analyzeGoMod(goModPath)
 		result.ModuleName = moduleName
 		result.ReplaceCount = replaceCount
 		result.HasReplaceDirectives = replaceCount > 0
 		result.Dependencies = dependencies
+		result.DirectDependencies = directDependencies
 
 		// Check if module name matches directory structure
 		if moduleName != "" {
@@ -239,12 +259,13 @@ func analyzeRepo(repoPath, name string, opts ScanOptions) RepoResult {
 		goModFiles := findGoModFiles(repoPath)
 		for _, goModFile := range goModFiles {
 			relPath, _ := filepath.Rel(repoPath, goModFile)
-			moduleName, replaceCount, dependencies := analyzeGoMod(goModFile)
+			moduleName, replaceCount, dependencies, directDependencies := analyzeGoMod(goModFile)
 			result.GoModFiles = append(result.GoModFiles, GoModResult{
-				Path:         relPath,
-				ModuleName:   moduleName,
-				Dependencies: dependencies,
-				ReplaceCount: replaceCount,
+				Path:               relPath,
+				ModuleName:         moduleName,
+				Dependencies:       dependencies,
+				DirectDependencies: directDependencies,
+				ReplaceCount:       replaceCount,
 			})
 		}
 	}
@@ -287,10 +308,10 @@ func findGoModFiles(rootPath string) []string {
 	return goModFiles
 }
 
-func analyzeGoMod(goModPath string) (moduleName string, replaceCount int, dependencies []string) {
+func analyzeGoMod(goModPath string) (moduleName string, replaceCount int, dependencies, directDependencies []string) {
 	file, err := os.Open(goModPath)
 	if err != nil {
-		return "", 0, nil
+		return "", 0, nil, nil
 	}
 	defer func() {
 		_ = file.Close()
@@ -299,6 +320,17 @@ func analyzeGoMod(goModPath string) (moduleName string, replaceCount int, depend
 	s := bufio.NewScanner(file)
 	inReplaceBlock := false
 	inRequireBlock := false
+
+	addDep := func(line string) {
+		dep, indirect := parseRequireLine(line)
+		if dep == "" {
+			return
+		}
+		dependencies = append(dependencies, dep)
+		if !indirect {
+			directDependencies = append(directDependencies, dep)
+		}
+	}
 
 	for s.Scan() {
 		line := strings.TrimSpace(s.Text())
@@ -330,9 +362,7 @@ func analyzeGoMod(goModPath string) (moduleName string, replaceCount int, depend
 
 		// Parse single-line require
 		if strings.HasPrefix(line, "require ") && !strings.HasPrefix(line, "require (") {
-			if dep := parseRequireLine(strings.TrimPrefix(line, "require ")); dep != "" {
-				dependencies = append(dependencies, dep)
-			}
+			addDep(strings.TrimPrefix(line, "require "))
 		}
 
 		// Handle require block
@@ -345,29 +375,29 @@ func analyzeGoMod(goModPath string) (moduleName string, replaceCount int, depend
 				inRequireBlock = false
 				continue
 			}
-			if dep := parseRequireLine(line); dep != "" {
-				dependencies = append(dependencies, dep)
-			}
+			addDep(line)
 		}
 	}
 
-	return moduleName, replaceCount, dependencies
+	return moduleName, replaceCount, dependencies, directDependencies
 }
 
-// parseRequireLine extracts the module path from a require line.
+// parseRequireLine extracts the module path from a require line, and
+// whether it carries a "// indirect" comment.
 // Input: "github.com/foo/bar v1.2.3" or "github.com/foo/bar v1.2.3 // indirect"
-// Output: "github.com/foo/bar"
-func parseRequireLine(line string) string {
+// Output: "github.com/foo/bar", false | true
+func parseRequireLine(line string) (modulePath string, indirect bool) {
 	line = strings.TrimSpace(line)
 	if line == "" || strings.HasPrefix(line, "//") {
-		return ""
+		return "", false
 	}
+	indirect = strings.Contains(line, "// indirect")
 	// Split on whitespace, first part is module path
 	parts := strings.Fields(line)
 	if len(parts) >= 1 {
-		return parts[0]
+		return parts[0], indirect
 	}
-	return ""
+	return "", false
 }
 
 // moduleMatchesPath checks if the module name ends with the directory name.
