@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"text/tabwriter"
 
 	"github.com/grokify/gogit"
 	"github.com/spf13/cobra"
@@ -30,9 +31,10 @@ upstream to be configured.
 directory defaults to the current directory.
 
 Examples:
-  gitscan pending                                # Unpushed commits in the current directory
+  gitscan pending                                # Unpushed commits, aligned for terminal reading
   gitscan pending ~/go/src/github.com/me/repo    # Unpushed commits in another repo
   gitscan pending --since-commit abc1234         # Commits after abc1234, regardless of upstream
+  gitscan pending --format markdown              # Copy-pasteable markdown table
   gitscan pending --format json                  # Machine-readable output for agents`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: runPending,
@@ -40,7 +42,7 @@ Examples:
 
 func init() {
 	pendingCmd.Flags().StringVar(&pendingSinceCommit, "since-commit", "", "List commits after this commit hash instead of unpushed commits")
-	pendingCmd.Flags().StringVarP(&pendingFormat, "format", "f", "table", "Output format: table or json")
+	pendingCmd.Flags().StringVarP(&pendingFormat, "format", "f", "table", "Output format: table (aligned for terminals), markdown (copy-pasteable), or json")
 	rootCmd.AddCommand(pendingCmd)
 }
 
@@ -68,8 +70,8 @@ func runPending(cmd *cobra.Command, args []string) error {
 		dir = args[0]
 	}
 
-	if pendingFormat != "table" && pendingFormat != "json" {
-		return fmt.Errorf("invalid format %q, must be 'table' or 'json'", pendingFormat)
+	if pendingFormat != "table" && pendingFormat != "markdown" && pendingFormat != "json" {
+		return fmt.Errorf("invalid format %q, must be 'table', 'markdown', or 'json'", pendingFormat)
 	}
 
 	absPath, err := resolvePath(dir)
@@ -92,10 +94,14 @@ func runPending(cmd *cobra.Command, args []string) error {
 		mode, ref = "since-commit", pendingSinceCommit
 	}
 
-	if pendingFormat == "json" {
+	switch pendingFormat {
+	case "json":
 		return printPendingJSON(absPath, mode, ref, commits)
+	case "markdown":
+		printPendingMarkdown(absPath, mode, ref, commits)
+	default: // "table"
+		printPendingTable(absPath, mode, ref, commits)
 	}
-	printPendingTable(absPath, mode, ref, commits)
 	return nil
 }
 
@@ -122,14 +128,39 @@ func printPendingJSON(repoPath, mode, ref string, commits []gogit.Commit) error 
 	return enc.Encode(report)
 }
 
-func printPendingTable(repoPath, mode, ref string, commits []gogit.Commit) {
+// printPendingHeader prints the report summary line shared by every
+// non-JSON format.
+func printPendingHeader(repoPath, mode, ref string, count int) {
 	fmt.Printf("Repo: %s\n", repoPath)
 	if mode == "unpushed" {
-		fmt.Printf("Pending commits (not yet pushed to %s): %d\n\n", ref, len(commits))
+		fmt.Printf("Pending commits (not yet pushed to %s): %d\n\n", ref, count)
 	} else {
-		fmt.Printf("Commits after %s: %d\n\n", ref, len(commits))
+		fmt.Printf("Commits after %s: %d\n\n", ref, count)
+	}
+}
+
+// printPendingTable renders an aligned plain-text table via text/tabwriter,
+// meant to be read directly in a terminal (the default format).
+func printPendingTable(repoPath, mode, ref string, commits []gogit.Commit) {
+	printPendingHeader(repoPath, mode, ref, len(commits))
+	if len(commits) == 0 {
+		return
 	}
 
+	tw := tabwriter.NewWriter(os.Stdout, 0, 2, 2, ' ', 0)
+	fmt.Fprintln(tw, "#\tHASH\tDATE\tTIME\tMESSAGE")
+	for i, c := range commits {
+		fmt.Fprintf(tw, "%d\t%s\t%s\t%s\t%s\n",
+			i+1, shortHash(c.Hash), c.CommitDate.Format("2006-01-02"), c.CommitDate.Format("15:04:05"),
+			sanitizeTabwriterCell(c.Subject))
+	}
+	tw.Flush()
+}
+
+// printPendingMarkdown renders a copy-pasteable GitHub-flavored markdown
+// table (e.g. for pasting into a PR description or issue).
+func printPendingMarkdown(repoPath, mode, ref string, commits []gogit.Commit) {
+	printPendingHeader(repoPath, mode, ref, len(commits))
 	if len(commits) == 0 {
 		return
 	}
@@ -137,18 +168,31 @@ func printPendingTable(repoPath, mode, ref string, commits []gogit.Commit) {
 	fmt.Println("| # | Hash | Date | Time | Message |")
 	fmt.Println("|---|------|------|------|---------|")
 	for i, c := range commits {
-		hash := c.Hash
-		if len(hash) > 7 {
-			hash = hash[:7]
-		}
 		fmt.Printf("| %d | %s | %s | %s | %s |\n",
-			i+1, hash, c.CommitDate.Format("2006-01-02"), c.CommitDate.Format("15:04:05"),
-			escapeTableCell(c.Subject))
+			i+1, shortHash(c.Hash), c.CommitDate.Format("2006-01-02"), c.CommitDate.Format("15:04:05"),
+			escapeMarkdownCell(c.Subject))
 	}
 }
 
-// escapeTableCell escapes characters that would otherwise break a markdown
-// table cell.
-func escapeTableCell(s string) string {
+// shortHash returns the standard 7-character abbreviated form of a commit
+// hash.
+func shortHash(hash string) string {
+	if len(hash) > 7 {
+		return hash[:7]
+	}
+	return hash
+}
+
+// escapeMarkdownCell escapes characters that would otherwise break a
+// markdown table cell.
+func escapeMarkdownCell(s string) string {
 	return strings.ReplaceAll(s, "|", "\\|")
+}
+
+// sanitizeTabwriterCell strips characters that would otherwise confuse
+// tabwriter's column alignment (it uses raw tab bytes as its own column
+// separator).
+func sanitizeTabwriterCell(s string) string {
+	s = strings.ReplaceAll(s, "\t", "    ")
+	return strings.ReplaceAll(s, "\n", " ")
 }

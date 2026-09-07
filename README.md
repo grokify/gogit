@@ -207,7 +207,7 @@ gitscan pending [directory]
 | Flag | Short | Default | Description |
 |------|-------|---------|-------------|
 | `--since-commit` | | (none) | List commits after this hash instead of unpushed commits (doesn't require an upstream) |
-| `--format` | `-f` | `table` | Output format: `table` or `json` |
+| `--format` | `-f` | `table` | Output format: `table` (aligned, for terminals), `markdown` (copy-pasteable), or `json` |
 
 `directory` defaults to the current directory. In the default mode (no `--since-commit`), the branch must have an upstream configured (`git push -u ...` at least once) — otherwise the command errors and asks for an explicit `--since-commit` hash.
 
@@ -223,18 +223,29 @@ gitscan pending ~/go/src/github.com/me/repo
 # Commits after a specific hash, regardless of upstream
 gitscan pending --since-commit abc1234
 
+# Copy-pasteable markdown table (e.g. for a PR description)
+gitscan pending --format markdown
+
 # Machine-readable output for agents
 gitscan pending --format json
 ```
 
 ### Pending Output
 
-Table format:
+Table format (default; aligned columns via `text/tabwriter`, meant to be read directly in a terminal):
 
 ```
 Repo: /Users/me/go/src/github.com/me/repo
 Pending commits (not yet pushed to @{upstream}): 2
 
+#  HASH     DATE        TIME      MESSAGE
+1  1fbde76  2026-09-07  12:16:02  feat: add b
+2  af0101e  2026-09-07  12:16:05  feat: add c
+```
+
+Markdown format (`--format markdown`; valid GitHub-flavored markdown, e.g. for pasting into a PR description or issue):
+
+```
 | # | Hash | Date | Time | Message |
 |---|------|------|------|---------|
 | 1 | 1fbde76 | 2026-09-07 | 12:16:02 | feat: add b |
