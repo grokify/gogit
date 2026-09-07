@@ -4,11 +4,13 @@ import "testing"
 
 func TestNormalizeRemoteURL(t *testing.T) {
 	cases := map[string]string{
-		"https://github.com/x/y.git":  "github.com/x/y",
-		"git@github.com:x/y.git":      "github.com/x/y",
-		"ssh://git@github.com/x/y":    "github.com/x/y",
-		"http://gitlab.com/a/b/c.git": "gitlab.com/a/b/c",
-		"":                            "",
+		"https://github.com/x/y.git":      "github.com/x/y",
+		"git@github.com:x/y.git":          "github.com/x/y",
+		"ssh://git@github.com/x/y":        "github.com/x/y",
+		"ssh://git@github.com:2222/x/y":   "github.com/x/y",
+		"https://github.com:8443/x/y.git": "github.com/x/y",
+		"http://gitlab.com/a/b/c.git":     "gitlab.com/a/b/c",
+		"":                                "",
 	}
 	for in, want := range cases {
 		if got := NormalizeRemoteURL(in); got != want {
