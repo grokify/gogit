@@ -152,7 +152,10 @@ func TestCLIGitBackend(t *testing.T) {
 		t.Error("IsRepo true for a non-repo")
 	}
 
-	uncommitted, unpushed := backend.GetStatus(repo, true)
+	uncommitted, unpushed, err := backend.GetStatus(repo, true)
+	if err != nil {
+		t.Fatalf("GetStatus: %v", err)
+	}
 	if uncommitted {
 		t.Error("clean repo reported uncommitted changes")
 	}
@@ -162,7 +165,32 @@ func TestCLIGitBackend(t *testing.T) {
 	}
 
 	writeFile(t, repo, "new.txt", "x\n")
-	if uncommitted, _ := backend.GetStatus(repo, false); !uncommitted {
+	if uncommitted, _, err := backend.GetStatus(repo, false); err != nil {
+		t.Fatalf("GetStatus: %v", err)
+	} else if !uncommitted {
 		t.Error("dirty repo should report uncommitted changes")
+	}
+}
+
+func TestCLIGitBackendDetachedHEAD(t *testing.T) {
+	root := t.TempDir()
+	repo := fixtureRepo(t, root, "repo", "")
+	gitRun(t, repo, "checkout", "-q", "--detach", "HEAD")
+	backend := NewCLIGitBackend()
+
+	_, unpushed, err := backend.GetStatus(repo, true)
+	if err != nil {
+		t.Fatalf("GetStatus: %v", err)
+	}
+	if unpushed {
+		t.Error("detached HEAD has no branch to push, should not count as unpushed")
+	}
+}
+
+func TestCLIGitBackendGetStatusError(t *testing.T) {
+	backend := NewCLIGitBackend()
+	_, _, err := backend.GetStatus(t.TempDir(), true)
+	if err == nil {
+		t.Fatal("expected an error for a non-git directory, got nil")
 	}
 }

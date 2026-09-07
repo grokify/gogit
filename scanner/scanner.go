@@ -37,6 +37,7 @@ type RepoResult struct {
 	GoModFiles            []GoModResult      // All go.mod files (when recurse=true)
 	LatestModTime         time.Time          // Most recent file modification time
 	WorkflowCompliance    WorkflowCompliance // Workflow compliance status (when workflow check enabled)
+	StatusError           string             // Non-empty when GetStatus failed; HasUncommittedChanges/HasUnpushedCommits are unknown, not false, in that case
 }
 
 // HasDependency checks if the repo depends on the given module path,
@@ -81,9 +82,12 @@ func (r RepoResult) ModifiedSince(d time.Duration) bool {
 	return r.LatestModTime.After(cutoff)
 }
 
-// NeedsPush returns true if the repo has uncommitted changes or unpushed commits.
+// NeedsPush returns true if the repo has uncommitted changes or unpushed
+// commits, or if that status could not be determined (StatusError set) —
+// an unknown status is treated as needing attention rather than silently
+// reported as clean.
 func (r RepoResult) NeedsPush() bool {
-	return r.HasUncommittedChanges || r.HasUnpushedCommits
+	return r.HasUncommittedChanges || r.HasUnpushedCommits || r.StatusError != ""
 }
 
 // ProgressFunc is called during scanning with current progress.
@@ -95,7 +99,7 @@ type ScanOptions struct {
 	CheckModTime  bool                 // Compute latest modification time (expensive)
 	CheckUnpushed bool                 // Check for unpushed commits
 	Workers       int                  // Number of parallel workers (0 = GOMAXPROCS)
-	GitBackend    GitBackend           // Git backend to use (nil = default go-git backend)
+	GitBackend    GitBackend           // Git backend to use (nil = default git CLI backend)
 	Workflow      WorkflowCheckOptions // Workflow compliance checking options
 }
 
@@ -223,7 +227,7 @@ func analyzeRepo(repoPath, name string, opts ScanOptions) RepoResult {
 		result.LatestModTime = getLatestModTime(repoPath)
 	}
 
-	// Get git backend (default to go-git)
+	// Get git backend (default to the git CLI backend)
 	backend := opts.GitBackend
 	if backend == nil {
 		backend = DefaultGitBackend()
@@ -234,7 +238,13 @@ func analyzeRepo(repoPath, name string, opts ScanOptions) RepoResult {
 
 	// Check git status (uncommitted changes and optionally unpushed commits)
 	if result.IsGitRepo {
-		result.HasUncommittedChanges, result.HasUnpushedCommits = backend.GetStatus(repoPath, opts.CheckUnpushed)
+		hasUncommitted, hasUnpushed, err := backend.GetStatus(repoPath, opts.CheckUnpushed)
+		if err != nil {
+			result.StatusError = err.Error()
+		} else {
+			result.HasUncommittedChanges = hasUncommitted
+			result.HasUnpushedCommits = hasUnpushed
+		}
 	}
 
 	// Analyze go.mod at root

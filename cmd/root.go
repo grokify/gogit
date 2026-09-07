@@ -134,6 +134,7 @@ func runScan(cmd *cobra.Command, args []string) error {
 		uncommittedCount     int
 		replaceCount         int
 		mismatchCount        int
+		statusErrorCount     int
 		workflowFullCount    int
 		workflowPartialCount int
 		workflowNoneCount    int
@@ -146,7 +147,8 @@ func runScan(cmd *cobra.Command, args []string) error {
 	rowNum := 0
 	for _, result := range results {
 		totalRepos++
-		hasIssues := result.HasUncommittedChanges || result.HasReplaceDirectives || result.HasModuleMismatch
+		hasIssues := result.HasUncommittedChanges || result.HasReplaceDirectives ||
+			result.HasModuleMismatch || result.StatusError != ""
 
 		if hasIssues {
 			reposWithIssues++
@@ -158,6 +160,9 @@ func runScan(cmd *cobra.Command, args []string) error {
 			}
 			if result.HasModuleMismatch {
 				mismatchCount++
+			}
+			if result.StatusError != "" {
+				statusErrorCount++
 			}
 		}
 
@@ -197,6 +202,9 @@ func runScan(cmd *cobra.Command, args []string) error {
 		fmt.Printf("  - Uncommitted changes: %d\n", uncommittedCount)
 		fmt.Printf("  - Replace directives:  %d\n", replaceCount)
 		fmt.Printf("  - Module mismatches:   %d\n", mismatchCount)
+		if statusErrorCount > 0 {
+			fmt.Printf("  - Status check failed:  %d (git status could not be determined; not counted as clean)\n", statusErrorCount)
+		}
 		if checkWorkflows {
 			fmt.Println()
 			fmt.Println("Workflow Compliance:")
@@ -217,7 +225,10 @@ func printTableHeader() {
 
 func printTableRow(num int, r scanner.RepoResult) {
 	uncommitted := ""
-	if r.HasUncommittedChanges {
+	switch {
+	case r.StatusError != "":
+		uncommitted = "?"
+	case r.HasUncommittedChanges:
 		uncommitted = "X"
 	}
 
@@ -255,6 +266,9 @@ func printResult(num int, r scanner.RepoResult, maxNameLen int, internalDeps []s
 	}
 	if r.HasModuleMismatch {
 		issues = append(issues, "mismatch")
+	}
+	if r.StatusError != "" {
+		issues = append(issues, "status-check-failed")
 	}
 	if !r.IsGitRepo {
 		issues = append(issues, "no-git")

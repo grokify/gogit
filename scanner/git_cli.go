@@ -1,6 +1,8 @@
 package scanner
 
 import (
+	"bytes"
+	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -26,17 +28,22 @@ func (c *CLIGitBackend) IsRepo(path string) bool {
 // Output format:
 //   - First line: ## branch...upstream [ahead N, behind M]
 //   - Remaining lines: file status (if any uncommitted changes)
-func (c *CLIGitBackend) GetStatus(repoPath string, checkUnpushed bool) (hasUncommitted, hasUnpushed bool) {
+//
+// A non-nil err means status could not be determined; callers must not
+// treat that as "clean" (see GitBackend.GetStatus).
+func (c *CLIGitBackend) GetStatus(repoPath string, checkUnpushed bool) (hasUncommitted, hasUnpushed bool, err error) {
 	cmd := exec.Command("git", "-C", repoPath, "status", "--porcelain", "-b")
 	cmd.Env = append(os.Environ(), "LC_ALL=C", "GIT_TERMINAL_PROMPT=0")
-	output, err := cmd.Output()
-	if err != nil {
-		return false, false
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	output, runErr := cmd.Output()
+	if runErr != nil {
+		return false, false, fmt.Errorf("git status in %s: %w: %s", repoPath, runErr, strings.TrimSpace(stderr.String()))
 	}
 
 	lines := strings.Split(string(output), "\n")
 	if len(lines) == 0 {
-		return false, false
+		return false, false, nil
 	}
 
 	// First line is branch info: ## main...origin/main [ahead 1]
@@ -52,14 +59,17 @@ func (c *CLIGitBackend) GetStatus(repoPath string, checkUnpushed bool) (hasUncom
 
 	// Check for unpushed commits if requested
 	if checkUnpushed {
-		// Look for [ahead N] in the branch line
-		if strings.Contains(branchLine, "[ahead") {
+		switch {
+		case strings.Contains(branchLine, "[ahead"):
 			hasUnpushed = true
-		} else if !strings.Contains(branchLine, "...") {
-			// No upstream configured (line is just "## main"), consider as unpushed
+		case strings.HasPrefix(branchLine, "## HEAD ("):
+			// Detached HEAD (e.g. "## HEAD (no branch)"): there is no
+			// branch to push, so this is never "unpushed".
+		case !strings.Contains(branchLine, "..."):
+			// A real branch with no upstream configured; treat as unpushed.
 			hasUnpushed = true
 		}
 	}
 
-	return hasUncommitted, hasUnpushed
+	return hasUncommitted, hasUnpushed, nil
 }
