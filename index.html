@@ -14,7 +14,7 @@
       
       
       
-        <link rel="next" href="releases/v0.8.0/">
+        <link rel="next" href="releases/v0.9.0/">
       
       
         
@@ -406,6 +406,34 @@
   
   
     <li class="md-nav__item">
+      <a href="releases/v0.9.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.9.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="releases/v0.8.0/" class="md-nav__link">
         
   
@@ -731,6 +759,9 @@ integrations.</p>
   worker count and context cancellation.</li>
 <li><strong>Metadata</strong> — <code>Repo.Branch</code>, <code>Repo.OriginURL</code>, <code>NormalizeRemoteURL</code>
   (canonical <code>host/path</code> identifiers), <code>Repo.Tags</code>, <code>Repo.TagsWithDates</code>.</li>
+<li><strong>Pending commits</strong> — <code>Repo.PendingCommits</code> lists commits ahead of the
+  current branch's upstream, or after an explicit commit hash;
+  <code>Repo.HasUpstream</code> checks whether the branch has one configured.</li>
 </ul>
 <div class="highlight"><pre><span></span><code><span class="nx">repo</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">gogit</span><span class="p">.</span><span class="nx">Open</span><span class="p">(</span><span class="s">&quot;/path/to/repo&quot;</span><span class="p">)</span>
 <span class="nx">commits</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">repo</span><span class="p">.</span><span class="nx">Log</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span><span class="w"> </span><span class="nx">gogit</span><span class="p">.</span><span class="nx">LogOptions</span><span class="p">{</span>
@@ -748,11 +779,14 @@ integrations.</p>
 <h2 id="gitscan-cli">gitscan CLI</h2>
 <p>Scan many repositories for ones needing attention: uncommitted or
 unpushed changes, <code>replace</code> directives, module/directory mismatches,
-dependency filters, release ordering, and workflow compliance.</p>
+dependency filters, release ordering, and workflow compliance. The
+<code>pending</code> subcommand reports commits in a single repo that haven't
+been pushed yet, or that come after an explicit commit hash — as an
+aligned terminal table, copy-pasteable markdown, or JSON for agents.</p>
 <div class="highlight"><pre><span></span><code>go<span class="w"> </span>install<span class="w"> </span>github.com/grokify/gogit/cmd/gitscan@latest
 </code></pre></div>
 <p>See the <a href="https://github.com/grokify/gogit#readme">README</a> for full CLI
-usage, and <a href="releases/v0.7.0/">Releases</a> for version history.</p>
+usage, and <a href="releases/v0.9.0/">Releases</a> for version history.</p>
 
 
 
