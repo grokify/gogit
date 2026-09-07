@@ -69,6 +69,8 @@ for _, c := range commits {
 | Metadata | `Repo.Branch`, `Repo.OriginURL` | Branch name and remote URL |
 | Remote normalization | `NormalizeRemoteURL(url)` | Canonical `host/path` identifiers |
 | Tags | `Repo.Tags`, `Repo.TagsWithDates` | Tag listing with creation dates |
+| Pending commits | `Repo.PendingCommits(ctx, sinceCommit)` | Commits ahead of upstream, or after an explicit commit hash |
+| Upstream check | `Repo.HasUpstream(ctx)` | Whether the current branch has an upstream configured |
 
 Renamed from `gitscan` (the CLI lives on at `cmd/gitscan`).
 
@@ -106,6 +108,7 @@ gitscan <directory>              # Scan for issues
 gitscan since <duration> [dir]   # Filter by modification time
 gitscan dep <module> [dir]       # Filter by dependency
 gitscan order [dir]              # Show repos in dependency order
+gitscan pending [dir]            # List commits not yet pushed
 ```
 
 ### Root Command (Issue Scanning)
@@ -191,6 +194,71 @@ gitscan dep github.com/google/go-github/v88 ~/go/src/github.com/grokify --direct
 
 # Match any major version of a module in one pass
 gitscan dep github.com/google/go-github ~/go/src/github.com/grokify --prefix --direct-only
+```
+
+## Pending Subcommand
+
+Report commits in a single git repository (not a directory of repos) that are ahead of its upstream — not yet pushed — or that come after an explicit commit hash. Useful for pre-push review, or for feeding an agent a structured list of what's about to be pushed.
+
+```bash
+gitscan pending [directory]
+```
+
+| Flag | Short | Default | Description |
+|------|-------|---------|-------------|
+| `--since-commit` | | (none) | List commits after this hash instead of unpushed commits (doesn't require an upstream) |
+| `--format` | `-f` | `table` | Output format: `table` or `json` |
+
+`directory` defaults to the current directory. In the default mode (no `--since-commit`), the branch must have an upstream configured (`git push -u ...` at least once) — otherwise the command errors and asks for an explicit `--since-commit` hash.
+
+### Pending Examples
+
+```bash
+# Commits not yet pushed, in the current directory
+gitscan pending
+
+# Commits not yet pushed, in another repo
+gitscan pending ~/go/src/github.com/me/repo
+
+# Commits after a specific hash, regardless of upstream
+gitscan pending --since-commit abc1234
+
+# Machine-readable output for agents
+gitscan pending --format json
+```
+
+### Pending Output
+
+Table format:
+
+```
+Repo: /Users/me/go/src/github.com/me/repo
+Pending commits (not yet pushed to @{upstream}): 2
+
+| # | Hash | Date | Time | Message |
+|---|------|------|------|---------|
+| 1 | 1fbde76 | 2026-09-07 | 12:16:02 | feat: add b |
+| 2 | af0101e | 2026-09-07 | 12:16:05 | feat: add c |
+```
+
+JSON format (`--format json`):
+
+```json
+{
+  "repo": "/Users/me/go/src/github.com/me/repo",
+  "mode": "unpushed",
+  "ref": "@{upstream}",
+  "count": 2,
+  "commits": [
+    {
+      "hash": "1fbde76e3b4c9ff29974e52b2e67bcece53ddaf6",
+      "date": "2026-09-07",
+      "time": "12:16:02",
+      "timestamp": "2026-09-07T12:16:02-07:00",
+      "message": "feat: add b"
+    }
+  ]
+}
 ```
 
 ## Order Subcommand
