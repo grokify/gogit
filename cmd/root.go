@@ -302,14 +302,7 @@ func printResult(num int, r scanner.RepoResult, maxNameLen int, internalDeps []s
 }
 
 func joinIssues(issues []string) string {
-	result := ""
-	for i, issue := range issues {
-		if i > 0 {
-			result += ", "
-		}
-		result += issue
-	}
-	return result
+	return strings.Join(issues, ", ")
 }
 
 func percent(count, total int) float64 {

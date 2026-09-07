@@ -54,15 +54,11 @@ func runSince(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("invalid duration %q: %v\nValid formats: 7d (days), 2w (weeks), 1m (months), 24h (hours)", sinceStr, err)
 	}
 
-	// Get directory from second argument or flag
-	var scanDir string
-	if len(args) > 1 {
-		scanDir = args[1]
-	} else if dirPath != "" {
-		scanDir = dirPath
-	} else {
+	// Get directory from second argument
+	if len(args) < 2 {
 		return fmt.Errorf("directory path required\nUsage: gitscan since <duration> [directory]")
 	}
+	scanDir := args[1]
 
 	// Resolve path
 	absPath, err := resolvePath(scanDir)

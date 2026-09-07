@@ -51,15 +51,11 @@ func runDep(cmd *cobra.Command, args []string) error {
 	// Parse module path from first argument
 	depFilter := args[0]
 
-	// Get directory from second argument or flag
-	var scanDir string
-	if len(args) > 1 {
-		scanDir = args[1]
-	} else if dirPath != "" {
-		scanDir = dirPath
-	} else {
+	// Get directory from second argument
+	if len(args) < 2 {
 		return fmt.Errorf("directory path required\nUsage: gitscan dep <module> [directory]")
 	}
+	scanDir := args[1]
 
 	// Resolve path
 	absPath, err := resolvePath(scanDir)

@@ -105,15 +105,13 @@ func CheckWorkflowCompliance(repoPath string, opts WorkflowCheckOptions) Workflo
 		}
 	}
 
-	// Determine compliance level
-	if len(result.MissingWorkflows) == 0 && result.RefRepoMatch {
+	// Determine compliance level. result.HasWorkflows is always true here
+	// (the function returns early above when no workflow files exist).
+	switch {
+	case len(result.MissingWorkflows) == 0 && result.RefRepoMatch:
 		result.ComplianceLevel = "full"
-	} else if result.HasWorkflows && len(result.MissingWorkflows) < len(opts.RequiredTypes) {
+	default:
 		result.ComplianceLevel = "partial"
-	} else if result.HasWorkflows {
-		result.ComplianceLevel = "partial"
-	} else {
-		result.ComplianceLevel = "none"
 	}
 
 	return result
