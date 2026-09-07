@@ -33,6 +33,9 @@ integrations.
   worker count and context cancellation.
 - **Metadata** — `Repo.Branch`, `Repo.OriginURL`, `NormalizeRemoteURL`
   (canonical `host/path` identifiers), `Repo.Tags`, `Repo.TagsWithDates`.
+- **Pending commits** — `Repo.PendingCommits` lists commits ahead of the
+  current branch's upstream, or after an explicit commit hash;
+  `Repo.HasUpstream` checks whether the branch has one configured.
 
 ```go
 repo, _ := gogit.Open("/path/to/repo")
@@ -56,11 +59,14 @@ go get github.com/grokify/gogit
 
 Scan many repositories for ones needing attention: uncommitted or
 unpushed changes, `replace` directives, module/directory mismatches,
-dependency filters, release ordering, and workflow compliance.
+dependency filters, release ordering, and workflow compliance. The
+`pending` subcommand reports commits in a single repo that haven't
+been pushed yet, or that come after an explicit commit hash — as an
+aligned terminal table, copy-pasteable markdown, or JSON for agents.
 
 ```bash
 go install github.com/grokify/gogit/cmd/gitscan@latest
 ```
 
 See the [README](https://github.com/grokify/gogit#readme) for full CLI
-usage, and [Releases](releases/v0.7.0.md) for version history.
+usage, and [Releases](releases/v0.8.0.md) for version history.
