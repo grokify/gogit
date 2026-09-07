@@ -7,6 +7,46 @@
   "maintainers": ["grokify"],
   "releases": [
     {
+      "version": "v0.9.0",
+      "date": "2026-09-07",
+      "highlights": [
+        { "description": "New `gitscan pending` subcommand and `Repo.PendingCommits`/`Repo.HasUpstream` library API report commits that exist locally but haven't been pushed, or that come after an explicit commit hash", "commit": "a50d81b" },
+        { "description": "Consolidated two independent, disagreeing AI co-author detectors onto one canonical registry, fixing a bug where a bare \"Claude Code\" co-author was misread as model \"Code\"", "commit": "fcb53b8" },
+        { "description": "Fixed `gitscan since 1m` (and other bare-month durations) silently resolving as minutes instead of 30-day months", "commit": "d962811" },
+        { "description": "`gitscan` no longer silently reports a repo as clean when `git status` itself fails to run", "commit": "5c87bb4" }
+      ],
+      "added": [
+        { "description": "`Repo.PendingCommits(ctx, sinceCommit)`: commits ahead of the current branch's upstream, or after an explicit commit hash; oldest-first", "commit": "a50d81b" },
+        { "description": "`Repo.HasUpstream(ctx)`: whether the current branch has an upstream (remote-tracking) branch configured", "commit": "a50d81b" },
+        { "description": "`gitscan pending [directory]`: report unpushed commits for a single repo, with `--since-commit <hash>` to filter from an explicit commit instead", "commit": "a50d81b" },
+        { "description": "`gitscan pending --format`: `table` (aligned via text/tabwriter, default), `markdown` (copy-pasteable), or `json` (structured, for agents)", "commit": "45e65d1" }
+      ],
+      "fixed": [
+        { "description": "AI co-author detection: `aicoauthor.go` and `authorship.go` maintained separate registries that disagreed on the same commit; `AnalyzeAuthorship` now builds on the single registry in `aicoauthor.go`, and its Claude model pattern requires a version number so the bare tool name is never misread as a model", "commit": "fcb53b8" },
+        { "description": "`gitscan since`: bare `Nm` durations (e.g. `1m`, `12m`) now parse as months as documented, instead of silently matching Go's stdlib minutes unit", "commit": "d962811" },
+        { "description": "`scanner.CLIGitBackend.GetStatus` now returns an error instead of reporting `(false, false)` when `git status` itself fails; surfaced as `RepoResult.StatusError` and a `status-check-failed` issue in `gitscan`'s output", "commit": "5c87bb4" },
+        { "description": "`GetStatus` no longer misclassifies a detached HEAD as having unpushed commits", "commit": "5c87bb4" },
+        { "description": "`gitscan --version` was hardcoded to `0.4.0` even after several releases; now tracks the current release", "commit": "bfec114" },
+        { "description": "`NormalizeRemoteURL`: an explicit port in an SSH/HTTPS remote URL (e.g. `ssh://host:2222/x/y`) was folded into the path instead of being dropped", "commit": "f8b794b" }
+      ],
+      "changed": [
+        { "description": "`since`/`dep`: removed an unreachable directory fallback branch left over from an earlier flag structure", "commit": "44628cc" },
+        { "description": "`scanner.CheckWorkflowCompliance`: collapsed redundant, always-true branches in compliance-level determination", "commit": "44628cc" }
+      ],
+      "dependencies": [
+        { "description": "github.com/grokify/mogo bumped 0.74.6 → 0.74.7 → 0.74.8", "commit": "8248015" }
+      ],
+      "tests": [
+        { "description": "Coverage for `PendingCommits` and `HasUpstream`: upstream with pending commits, no-upstream error path, explicit-hash mode, and upstream detection via a bare-repo + `push -u` fixture", "commit": "1bacb87" },
+        { "description": "Coverage for the `GetStatus` error path and detached-HEAD status handling", "commit": "5c87bb4" },
+        { "description": "Regression coverage for the SSH/HTTPS port-normalization fix", "commit": "f8b794b" }
+      ],
+      "documentation": [
+        { "description": "README: removed the `--go-git` flag documentation (the backend was never implemented) in favor of a \"Why the Git CLI, Not go-git\" rationale section; documented the previously-undocumented `--check-workflows`/`--ref-repo` flags; fixed a stale `KnownAIProviders` reference after the AI registry consolidation", "commit": "08eb90a" },
+        { "description": "README and docs/index.md: documented the `gitscan pending` subcommand and its library API", "commit": "eddaba7" }
+      ]
+    },
+    {
       "version": "v0.8.0",
       "date": "2026-08-02",
       "highlights": [
