@@ -8,34 +8,43 @@ import (
 // AICoAuthor represents an AI coding assistant identified from a co-author trailer.
 type AICoAuthor struct {
 	Signature Signature `json:"signature"`
-	Tool      string    `json:"tool"`            // e.g., "Claude Code", "GitHub Copilot", "Gemini CLI"
-	Model     string    `json:"model,omitempty"` // e.g., "Sonnet 4", "Opus 4", "gemini-2.5-pro"
+	Tool      string    `json:"tool"`               // e.g., "Claude Code", "GitHub Copilot", "Gemini CLI"
+	Provider  string    `json:"provider,omitempty"` // canonical provider slug, e.g. "anthropic"
+	Model     string    `json:"model,omitempty"`    // e.g., "Sonnet 4", "Opus 4", "gemini-2.5-pro"
 }
 
 // AIToolPattern defines how to recognize an AI tool from co-author email and
 // extract model version from the name.
 type AIToolPattern struct {
 	Name         string   // Display name, e.g., "Claude Code"
+	Provider     string   // Canonical provider slug, e.g. "anthropic"
 	Emails       []string // Known email addresses (lowercase)
 	ModelPattern *regexp.Regexp
 }
 
-// DefaultAITools is the built-in registry of AI coding assistants.
+// DefaultAITools is the canonical, built-in registry of AI coding assistants
+// and their co-author signatures. Consumers should use MatchAITool or
+// Commit.AICoAuthors rather than maintaining separate lists.
 var DefaultAITools = []AIToolPattern{
 	{
-		Name:   "Claude Code",
-		Emails: []string{"noreply@anthropic.com"},
-		// "Claude Sonnet 4" → "Sonnet 4", "Claude Opus 4.5" → "Opus 4.5"
-		ModelPattern: regexp.MustCompile(`(?i)^Claude\s+(.+)$`),
+		Name:     "Claude Code",
+		Provider: "anthropic",
+		Emails:   []string{"noreply@anthropic.com"},
+		// "Claude Sonnet 4" → "Sonnet 4", "Claude Opus 4.5" → "Opus 4.5".
+		// Requires a trailing version-number component to distinguish
+		// model names from the bare tool name ("Claude Code").
+		ModelPattern: regexp.MustCompile(`(?i)^Claude\s+(\S+\s+[\d][\d.]*)$`),
 	},
 	{
-		Name:   "GitHub Copilot",
-		Emails: []string{"noreply@github.com", "copilot@github.com"},
+		Name:     "GitHub Copilot",
+		Provider: "github",
+		Emails:   []string{"noreply@github.com", "copilot@github.com"},
 		// Copilot doesn't typically include model in name
 		ModelPattern: nil,
 	},
 	{
-		Name: "Gemini CLI",
+		Name:     "Gemini CLI",
+		Provider: "google",
 		Emails: []string{
 			"218195315+gemini-cli@users.noreply.github.com",
 			"176961590+gemini-code-assist[bot]@users.noreply.github.com",
@@ -46,13 +55,15 @@ var DefaultAITools = []AIToolPattern{
 		ModelPattern: regexp.MustCompile(`(?i)^gemini[-_]?cli\s+(.+)$`),
 	},
 	{
-		Name:   "Cursor",
-		Emails: []string{"ai@cursor.sh", "cursor@cursor.sh"},
+		Name:     "Cursor",
+		Provider: "cursor",
+		Emails:   []string{"ai@cursor.sh", "cursor@cursor.sh"},
 		// "Cursor claude-3.5-sonnet" → "claude-3.5-sonnet"
 		ModelPattern: regexp.MustCompile(`(?i)^Cursor\s+(.+)$`),
 	},
 	{
 		Name:         "Aider",
+		Provider:     "aider",
 		Emails:       []string{"aider@aider.chat"},
 		ModelPattern: nil,
 	},
@@ -71,6 +82,7 @@ func MatchAITool(sig Signature, tools []AIToolPattern) *AICoAuthor {
 		ai := &AICoAuthor{
 			Signature: sig,
 			Tool:      tool.Name,
+			Provider:  tool.Provider,
 		}
 
 		if tool.ModelPattern != nil {

@@ -24,10 +24,12 @@ func TestMatchAITool(t *testing.T) {
 			wantModel: "Opus 4.5",
 		},
 		{
-			name:      "Claude Code legacy format",
+			// The bare tool name has no version component, so it must not
+			// be misread as a model name (e.g. "Code").
+			name:      "Claude Code bare tool name, no model",
 			sig:       Signature{Name: "Claude Code", Email: "noreply@anthropic.com"},
 			wantTool:  "Claude Code",
-			wantModel: "Code",
+			wantModel: "",
 		},
 		{
 			name:      "GitHub Copilot",
