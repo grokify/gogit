@@ -58,31 +58,32 @@ func createGitBackend() scanner.GitBackend {
 }
 
 // parseDuration parses duration strings like "7d", "2w", "1m", "24h".
-// Supported units: h (hours), d (days), w (weeks), m (months, 30 days).
+// Supported custom units: d (days), w (weeks), m (months, 30 days). Bare
+// N-unit values are matched against the custom format first, since Go's
+// stdlib time.ParseDuration also accepts "m" as minutes and would otherwise
+// shadow the "months" unit — e.g. "1m" is ambiguous between 1 minute and
+// 1 month, and callers of this CLI mean months.
 func parseDuration(s string) (time.Duration, error) {
-	// Try standard Go duration first (e.g., "24h", "1h30m")
+	re := regexp.MustCompile(`^(\d+)([dwm])$`)
+	if matches := re.FindStringSubmatch(s); matches != nil {
+		value, err := strconv.Atoi(matches[1])
+		if err != nil {
+			return 0, fmt.Errorf("invalid duration value %q: %w", matches[1], err)
+		}
+		switch matches[2] {
+		case "d":
+			return time.Duration(value) * 24 * time.Hour, nil
+		case "w":
+			return time.Duration(value) * 7 * 24 * time.Hour, nil
+		case "m":
+			return time.Duration(value) * 30 * 24 * time.Hour, nil
+		}
+	}
+
+	// Fall back to standard Go duration syntax (e.g., "24h", "1h30m").
 	if d, err := time.ParseDuration(s); err == nil {
 		return d, nil
 	}
 
-	// Parse custom formats: 7d, 2w, 1m
-	re := regexp.MustCompile(`^(\d+)([dwm])$`)
-	matches := re.FindStringSubmatch(s)
-	if matches == nil {
-		return 0, fmt.Errorf("invalid duration format")
-	}
-
-	value, _ := strconv.Atoi(matches[1])
-	unit := matches[2]
-
-	switch unit {
-	case "d":
-		return time.Duration(value) * 24 * time.Hour, nil
-	case "w":
-		return time.Duration(value) * 7 * 24 * time.Hour, nil
-	case "m":
-		return time.Duration(value) * 30 * 24 * time.Hour, nil
-	default:
-		return 0, fmt.Errorf("unknown unit: %s", unit)
-	}
+	return 0, fmt.Errorf("invalid duration format")
 }
