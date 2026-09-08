@@ -7,6 +7,44 @@
   "maintainers": ["grokify"],
   "releases": [
     {
+      "version": "v0.10.0",
+      "date": "2026-09-08",
+      "highlights": [
+        { "description": "Fleet-wide `gitscan pending`: sweep unpushed commits across many repositories at once by passing one or more paths (e.g. one per GitHub org you manage), reported per repo with a summary of how many repos were scanned and have work waiting", "commit": "4cb1c1e" },
+        { "description": "New `gitscan pushed` subcommand and `Repo.PushedCommits` library API: the most recent commits already pushed on a branch — the counterpart to `pending` — so you can see recent activity on either side of what has reached the remote", "commit": "21882fb" },
+        { "description": "`gitscan pending` no longer errors on a branch with no upstream: a repo that was never pushed now reports every commit as pending, resolving the push baseline from the upstream or the matching remote-tracking branch (e.g. `origin/main`)", "commit": "85243b6" },
+        { "description": "Removed the `-d`/`--dir` flag: the scan directory is now a uniform optional positional argument across every subcommand, defaulting to the current directory", "commit": "542b9c6" }
+      ],
+      "breaking": [
+        { "description": "The `-d`/`--dir` flag is removed from `gitscan` and `gitscan order`; pass the directory as a positional argument instead (e.g. `gitscan ~/go/src`, `gitscan order ~/go/src`)", "commit": "542b9c6" },
+        { "description": "`gitscan pending` and `gitscan pushed` JSON output changed from a single `{repo,mode,ref,count,commits}` object to an invariant `{\"repos\":[{…}],\"summary\":{…}}` envelope, so consumers never branch on the number of repositories reported", "commit": "4cb1c1e" }
+      ],
+      "added": [
+        { "description": "`gitscan pending [path...]`: accepts one or more repository or directory paths and reports every discovered repo (concurrently); repos with nothing pending are omitted from the table/markdown views and counted in the summary", "commit": "4cb1c1e" },
+        { "description": "`gitscan pending --depth`: how many directory levels below each path to search for repositories (default 1)", "commit": "4cb1c1e" },
+        { "description": "`gitscan pushed [count] [directory]`: list the most recent commits already pushed on the current branch, newest first; `count` defaults to 10 and is an optional positional (either order relative to the directory)", "commit": "21882fb" },
+        { "description": "`Repo.PushedCommits(ctx, limit)` and `PushedResult`: library API returning the most recent pushed commits and the baseline they were read from", "commit": "21882fb" },
+        { "description": "`LogOptions.Rev`: log commits reachable from an arbitrary revision (e.g. a push baseline) instead of the default HEAD", "commit": "21882fb" },
+        { "description": "`gitscan pending` shows a live progress bar on stderr while sweeping multiple repositories, keeping stdout clean for piping and JSON", "commit": "8432515" }
+      ],
+      "fixed": [
+        { "description": "`gitscan pending` previously errored `no upstream configured` whenever `@{upstream}` did not resolve, which also blocked repos that simply had not been pushed yet; it now reports those commits as pending. An unborn or detached HEAD yields no pending commits rather than an error", "commit": "85243b6" },
+        { "description": "Build-from-source instructions in the README pointed at the wrong directory and build path (`cd gitscan` / `go build .`); corrected to `cd gogit` / `go build ./cmd/gitscan`", "commit": "54a31fa" }
+      ],
+      "changed": [
+        { "description": "`Repo.PendingCommits` now returns a `PendingResult` carrying the resolved push baseline (upstream, matching remote-tracking branch, or empty when never pushed) so callers can label the report; the CLI adds an `unpushed-all` mode for branches with no push target", "commit": "85243b6" },
+        { "description": "The commit renderer was generalized from pending-only (`PendingReport`/`Pending`) into a shared, list-based `CommitReport`/`Commits` API used by both `pending` and `pushed`, with an invariant multi-repo output shape", "commit": "ca377e8" },
+        { "description": "The shared `recurse` flag was scoped per subcommand and root-only flags moved out of the shared file, leaving no shared mutable flag state", "commit": "542b9c6" }
+      ],
+      "tests": [
+        { "description": "Coverage for `PushedCommits` (upstream, limit and newest-first ordering, no-upstream), fleet `pending` (multi-repo grouping, summary, and the single-repo `--since-commit` guard), and the list-based renderer (fleet hiding of clean repos, JSON envelope shape, and per-repo error reporting)", "commit": "4cb1c1e" }
+      ],
+      "documentation": [
+        { "description": "README and docs/index.md: documented fleet `pending`, the `pushed` subcommand, the positional scan directory, and the previously-undocumented `since --unpushed` flag", "commit": "54a31fa" },
+        { "description": "README: recorded fleet-sweep cold/warm cache performance (~22s cold vs ~5.5s warm across ~640 repos) and a planned `--modified-since` prefilter to skip unchanged repositories", "commit": "34d6428" }
+      ]
+    },
+    {
       "version": "v0.9.0",
       "date": "2026-09-07",
       "highlights": [
