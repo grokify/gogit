@@ -62,7 +62,7 @@ changelog:
 release:
   github:
     owner: grokify
-    name: gitscan
+    name: gogit
   draft: false
   prerelease: auto
   name_template: "v{{.Version}}"
