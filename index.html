@@ -14,7 +14,7 @@
       
       
       
-        <link rel="next" href="releases/v0.9.0/">
+        <link rel="next" href="releases/v0.10.0/">
       
       
         
@@ -406,6 +406,34 @@
   
   
     <li class="md-nav__item">
+      <a href="releases/v0.10.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.10.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="releases/v0.9.0/" class="md-nav__link">
         
   
@@ -740,7 +768,8 @@ integrations.</p>
   author/committer identities, subjects, trailers (<code>Commit.CoAuthors()</code>
   for <code>Co-authored-by</code>), and <code>--numstat</code> change stats.</li>
 <li><strong>Incremental ingestion</strong> — <code>LogOptions.SinceCommit</code> limits output to
-  commits after a given SHA (<code>sha..HEAD</code>) for high-water-mark workflows.</li>
+  commits after a given SHA (<code>sha..HEAD</code>) for high-water-mark workflows;
+  <code>LogOptions.Rev</code> logs from an arbitrary revision instead of HEAD.</li>
 <li><strong>Reverse order</strong> — <code>LogOptions.Reverse</code> returns commits oldest-first.</li>
 <li><strong>AI authorship</strong> — <code>AnalyzeAuthorship</code> detects AI coding assistants
   (Claude Code, GitHub Copilot, Gemini CLI, Cursor, Aider) from
@@ -759,9 +788,12 @@ integrations.</p>
   worker count and context cancellation.</li>
 <li><strong>Metadata</strong> — <code>Repo.Branch</code>, <code>Repo.OriginURL</code>, <code>NormalizeRemoteURL</code>
   (canonical <code>host/path</code> identifiers), <code>Repo.Tags</code>, <code>Repo.TagsWithDates</code>.</li>
-<li><strong>Pending commits</strong> — <code>Repo.PendingCommits</code> lists commits ahead of the
-  current branch's upstream, or after an explicit commit hash;
-  <code>Repo.HasUpstream</code> checks whether the branch has one configured.</li>
+<li><strong>Pending &amp; pushed commits</strong> — <code>Repo.PendingCommits</code> lists commits ahead of
+  the branch's push target (its upstream, or the matching remote-tracking
+  branch such as <code>origin/main</code>), or after an explicit commit hash; a branch
+  that was never pushed reports every commit as pending. <code>Repo.PushedCommits</code>
+  lists the most recent commits already pushed. <code>Repo.HasUpstream</code> reports
+  whether an upstream is configured.</li>
 </ul>
 <div class="highlight"><pre><span></span><code><span class="nx">repo</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">gogit</span><span class="p">.</span><span class="nx">Open</span><span class="p">(</span><span class="s">&quot;/path/to/repo&quot;</span><span class="p">)</span>
 <span class="nx">commits</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">repo</span><span class="p">.</span><span class="nx">Log</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span><span class="w"> </span><span class="nx">gogit</span><span class="p">.</span><span class="nx">LogOptions</span><span class="p">{</span>
@@ -780,9 +812,10 @@ integrations.</p>
 <p>Scan many repositories for ones needing attention: uncommitted or
 unpushed changes, <code>replace</code> directives, module/directory mismatches,
 dependency filters, release ordering, and workflow compliance. The
-<code>pending</code> subcommand reports commits in a single repo that haven't
-been pushed yet, or that come after an explicit commit hash — as an
-aligned terminal table, copy-pasteable markdown, or JSON for agents.</p>
+<code>pending</code> subcommand reports unpushed commits across one or many
+repositories (sweep several org directories at once), and <code>pushed</code>
+lists the most recent commits already pushed — both as an aligned
+terminal table, copy-pasteable markdown, or JSON for agents.</p>
 <div class="highlight"><pre><span></span><code>go<span class="w"> </span>install<span class="w"> </span>github.com/grokify/gogit/cmd/gitscan@latest
 </code></pre></div>
 <p>See the <a href="https://github.com/grokify/gogit#readme">README</a> for full CLI

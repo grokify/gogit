@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://grokify.github.io/gogit/releases/v0.9.0/">
       
       
-        <link rel="prev" href="../..">
+        <link rel="prev" href="../v0.10.0/">
       
       
         <link rel="next" href="../v0.8.0/">
@@ -338,6 +338,34 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../v0.10.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.10.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -435,10 +463,32 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#rfc-3339-timestamps-weekday-and-tz" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RFC 3339 timestamps, weekday, and --tz
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#bug-fixes" class="md-nav__link">
     <span class="md-ellipsis">
       
         Bug fixes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#library-first-refactor-cmd-logic-moves-into-scanner-and-two-new-internal-packages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Library-first refactor: cmd/ logic moves into scanner and two new internal packages
       
     </span>
   </a>
@@ -762,10 +812,32 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#rfc-3339-timestamps-weekday-and-tz" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RFC 3339 timestamps, weekday, and --tz
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#bug-fixes" class="md-nav__link">
     <span class="md-ellipsis">
       
         Bug fixes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#library-first-refactor-cmd-logic-moves-into-scanner-and-two-new-internal-packages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Library-first refactor: cmd/ logic moves into scanner and two new internal packages
       
     </span>
   </a>
@@ -811,7 +883,7 @@
 <h1 id="gogit-v090-release-notes">gogit v0.9.0 Release Notes</h1>
 <p><strong>Release Date:</strong> 2026-09-07</p>
 <h2 id="overview">Overview</h2>
-<p>This release adds a way to report commits that haven't been pushed yet, and fixes a batch of bugs surfaced during a review pass across the library and <code>gitscan</code> CLI — including two cases where a command silently produced the wrong answer instead of erroring.</p>
+<p>This release adds a way to report commits that haven't been pushed yet, fixes a batch of bugs surfaced during a review pass across the library and <code>gitscan</code> CLI — including two cases where a command silently produced the wrong answer instead of erroring — and moves CLI logic out of <code>cmd/*.go</code> into the library and two new internal packages, closing long-standing test-coverage gaps in the process.</p>
 <h2 id="highlights">Highlights</h2>
 <h3 id="gitscan-pending-report-commits-not-yet-pushed"><code>gitscan pending</code>: report commits not yet pushed</h3>
 <p><code>Repo.PendingCommits(ctx, sinceCommit)</code> and <code>Repo.HasUpstream(ctx)</code> report commits reachable from <code>HEAD</code> but not from the current branch's upstream — or, given an explicit commit hash, everything after that commit regardless of upstream:</p>
@@ -822,9 +894,48 @@
 <div class="highlight"><pre><span></span><code>gitscan<span class="w"> </span>pending<span class="w">                        </span><span class="c1"># unpushed commits in the current directory</span>
 gitscan<span class="w"> </span>pending<span class="w"> </span>--since-commit<span class="w"> </span>abc1234<span class="w"> </span><span class="c1"># commits after abc1234, regardless of upstream</span>
 </code></pre></div>
-<p><code>--format</code> selects the output shape: <code>table</code> (default) renders aligned columns via the standard library's <code>text/tabwriter</code> for direct terminal reading, <code>markdown</code> renders a copy-pasteable GitHub-flavored table for a PR or issue, and <code>json</code> emits a structured <code>{repo, mode, ref, count, commits[]}</code> envelope with both human-readable date/time fields and a precise RFC3339 timestamp, for feeding an agent a list of what's about to be pushed.</p>
+<p><code>--format</code> selects the output shape: <code>table</code> (default) renders aligned columns via the standard library's <code>text/tabwriter</code> for direct terminal reading, <code>markdown</code> renders a copy-pasteable GitHub-flavored table for a PR or issue, and <code>json</code> emits a structured <code>{repo, mode, ref, count, commits[]}</code> envelope for feeding an agent a list of what's about to be pushed.</p>
+<h3 id="rfc-3339-timestamps-weekday-and-tz">RFC 3339 timestamps, weekday, and <code>--tz</code></h3>
+<p>Every format now shows each commit's timestamp as RFC 3339 with an explicit UTC offset (<code>Z</code> for exact UTC, otherwise numeric, e.g. <code>-07:00</code>), plus a weekday (<code>Sun</code>..<code>Sat</code>):</p>
+<div class="highlight"><pre><span></span><code>#  HASH     DAY  TIMESTAMP                  MESSAGE
+1  1fbde76  Mon  2026-09-07T12:16:02-07:00  feat: add b
+</code></pre></div>
+<p>By default each commit keeps its own recorded offset — usually your local time if you commit from one machine, but not normalized across collaborators or CI in different timezones. The new <code>--tz</code> flag converts every timestamp to one consistent zone instead:</p>
+<div class="highlight"><pre><span></span><code>gitscan<span class="w"> </span>pending<span class="w"> </span>--tz<span class="w"> </span>utc<span class="w">    </span><span class="c1"># normalize to UTC</span>
+gitscan<span class="w"> </span>pending<span class="w"> </span>--tz<span class="w"> </span><span class="nb">local</span><span class="w">  </span><span class="c1"># convert to this machine&#39;s timezone</span>
+</code></pre></div>
 <h3 id="bug-fixes">Bug fixes</h3>
-<p>Five fixes landed from a review pass, the most notable being two silent-wrong-answer bugs: <code>gitscan since 1m</code> (and other bare-month durations) resolved as <em>minutes</em> instead of the documented 30-day <em>months</em>, and two independent AI co-author detectors disagreed on the same commit — one of them misread a bare <code>Claude Code</code> co-author as if <code>"Code"</code> were a model name. Also fixed: <code>gitscan</code> reporting a repo as clean when <code>git status</code> itself failed to run instead of surfacing the error, a detached <code>HEAD</code> misclassified as having unpushed commits, a stale <code>--version</code> string, and an explicit port in an SSH/HTTPS remote URL getting folded into the path by <code>NormalizeRemoteURL</code>. See <a href="https://github.com/grokify/gogit/blob/main/CHANGELOG.md">CHANGELOG.md</a> for the full list with commit links.</p>
+<p>Five fixes landed from a review pass, the most notable being two silent-wrong-answer bugs: <code>gitscan since 1m</code> (and other bare-month durations) resolved as <em>minutes</em> instead of the documented 30-day <em>months</em>, and two independent AI co-author detectors disagreed on the same commit — one of them misread a bare <code>Claude Code</code> co-author as if <code>"Code"</code> were a model name. Also fixed: <code>gitscan</code> reporting a repo as clean when <code>git status</code> itself failed to run instead of surfacing the error, a detached <code>HEAD</code> misclassified as having unpushed commits, a stale <code>--version</code> string, and an explicit port in an SSH/HTTPS remote URL getting folded into the path by <code>NormalizeRemoteURL</code>.</p>
+<h3 id="library-first-refactor-cmd-logic-moves-into-scanner-and-two-new-internal-packages">Library-first refactor: <code>cmd/</code> logic moves into <code>scanner</code> and two new internal packages</h3>
+<p>Per this project's library-first approach — reusable packages as the source of truth, thin CLI adapters on top — logic that lived only in <code>cmd/*.go</code>, and was therefore untestable without invoking Cobra or capturing <code>os.Stdout</code>, moved out:</p>
+<ul>
+<li><strong><code>scanner</code></strong> gained <code>ParseDuration</code>, <code>RepoResult.MatchesDependency</code>, and <code>RepoResult.HasIssues</code> as public, directly-testable API.</li>
+<li><strong><code>internal/render</code></strong> (new) holds all of <code>gitscan</code>'s output formatting — <code>Scan</code>, <code>Since</code>, <code>Dep</code>, <code>Order</code>, <code>Pending</code> — writing to an <code>io.Writer</code> instead of calling <code>fmt.Print*</code> directly, so it's testable with a <code>bytes.Buffer</code>.</li>
+<li><strong><code>internal/cliutil</code></strong> (new) holds path resolution.</li>
+</ul>
+<p><code>cmd/root.go</code> shrank from ~310 lines to ~110; <code>cmd/pending.go</code> from ~200 to ~75. Every <code>cmd/*.go</code> file is now just: parse flags → call <code>scanner</code> → call <code>render</code>. Test coverage moved with it:</p>
+<table>
+<thead>
+<tr>
+<th>Package</th>
+<th>Before</th>
+<th>After</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>scanner</code></td>
+<td>41.2%</td>
+<td>90.7%</td>
+</tr>
+<tr>
+<td><code>cmd</code></td>
+<td>0%</td>
+<td>82.8%</td>
+</tr>
+</tbody>
+</table>
+<p>Also enabled <code>errcheck</code> in <code>golangci-lint</code>, per the org's never-discard-errors policy (no existing violations).</p>
 <h2 id="installation">Installation</h2>
 <div class="highlight"><pre><span></span><code>go<span class="w"> </span>install<span class="w"> </span>github.com/grokify/gogit/cmd/gitscan@v0.9.0
 </code></pre></div>
