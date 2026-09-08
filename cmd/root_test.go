@@ -12,7 +12,7 @@ func TestRootRegistersSubcommands(t *testing.T) {
 	for _, c := range rootCmd.Commands() {
 		names[c.Name()] = true
 	}
-	for _, want := range []string{"since", "dep", "order", "pending"} {
+	for _, want := range []string{"since", "dep", "order", "pending", "pushed"} {
 		if !names[want] {
 			t.Errorf("expected subcommand %q to be registered under rootCmd", want)
 		}

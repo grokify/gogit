@@ -37,7 +37,8 @@ Subcommands:
   gitscan since <duration> [dir]   Filter by modification time
   gitscan dep <module> [dir]       Filter by dependency
   gitscan order [dir]              Show repos in dependency order
-  gitscan pending [dir]            List commits not yet pushed in one repo`,
+  gitscan pending [dir]            List commits not yet pushed in one repo
+  gitscan pushed [count] [dir]     List the most recent pushed commits in one repo`,
 	Version: version,
 	Args:    cobra.MaximumNArgs(1),
 	RunE:    runScan,

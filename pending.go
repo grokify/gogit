@@ -65,6 +65,43 @@ func (r *Repo) PendingCommits(ctx context.Context, sinceCommit string) (PendingR
 	return PendingResult{Commits: commits, Baseline: base}, nil
 }
 
+// PushedResult is the outcome of a PushedCommits query.
+type PushedResult struct {
+	// Commits are the pushed commits, most recent first.
+	Commits []Commit
+	// Baseline is the ref the commits were read from: the configured
+	// upstream ("@{upstream}") or the matching remote-tracking branch (e.g.
+	// "origin/main"). It is empty when the branch has no push target, in
+	// which case nothing has been pushed and Commits is empty.
+	Baseline string
+}
+
+// PushedCommits returns up to limit commits that have already been pushed on
+// the current branch — those reachable from its push target (the configured
+// upstream, or failing that the matching remote-tracking branch such as
+// origin/main) — most recent first. A limit of zero or less returns all
+// pushed commits.
+//
+// When the branch has no push target (never pushed, no upstream), nothing is
+// considered pushed: Commits is empty and Baseline is "". This is the mirror
+// image of PendingCommits, which reports every commit as pending in the same
+// situation.
+func (r *Repo) PushedCommits(ctx context.Context, limit int) (PushedResult, error) {
+	base, err := r.pushBaseline(ctx)
+	if err != nil {
+		return PushedResult{}, err
+	}
+	if base == "" {
+		return PushedResult{}, nil
+	}
+
+	commits, err := r.Log(ctx, LogOptions{Rev: base, MaxCount: max(0, limit)})
+	if err != nil {
+		return PushedResult{}, err
+	}
+	return PushedResult{Commits: commits, Baseline: base}, nil
+}
+
 // pushBaseline returns the ref representing what the current branch has
 // already been pushed to, for computing unpushed ("pending") commits. It
 // prefers the configured upstream (@{upstream}); failing that, the

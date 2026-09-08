@@ -108,4 +108,6 @@ func resetFlags(t *testing.T) {
 	pendingSinceCommit = ""
 	pendingFormat = "table"
 	pendingTZ = "original"
+	pushedFormat = "table"
+	pushedTZ = "original"
 }

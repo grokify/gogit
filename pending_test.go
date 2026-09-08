@@ -196,3 +196,72 @@ func TestPendingCommitsSinceHash(t *testing.T) {
 		t.Errorf("unexpected order: %q, %q", res.Commits[0].Subject, res.Commits[1].Subject)
 	}
 }
+
+func TestPushedCommitsUpstream(t *testing.T) {
+	dir, _ := pushableRepo(t)
+	// One commit is pushed (chore: init); these two are not.
+	commitFile(t, dir, "b.txt", "one\n", "feat: add b")
+	commitFile(t, dir, "c.txt", "two\n", "feat: add c")
+
+	r, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := r.PushedCommits(context.Background(), 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Commits) != 1 {
+		t.Fatalf("expected only the 1 pushed commit, got %d", len(res.Commits))
+	}
+	if res.Baseline != "@{upstream}" {
+		t.Errorf("expected baseline @{upstream}, got %q", res.Baseline)
+	}
+	if res.Commits[0].Subject != "chore: init" {
+		t.Errorf("unexpected pushed commit: %q", res.Commits[0].Subject)
+	}
+}
+
+func TestPushedCommitsLimitAndOrder(t *testing.T) {
+	dir, _ := pushableRepo(t)
+	// Push two more so three commits are on origin, newest last.
+	commitFile(t, dir, "b.txt", "one\n", "feat: add b")
+	commitFile(t, dir, "c.txt", "two\n", "feat: add c")
+	run(t, dir, "push", "-q", "origin", "main")
+
+	r, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := r.PushedCommits(context.Background(), 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Commits) != 2 {
+		t.Fatalf("expected the limit of 2 pushed commits, got %d", len(res.Commits))
+	}
+	// Most recent first.
+	if res.Commits[0].Subject != "feat: add c" || res.Commits[1].Subject != "feat: add b" {
+		t.Errorf("expected newest-first order, got %q, %q", res.Commits[0].Subject, res.Commits[1].Subject)
+	}
+}
+
+func TestPushedCommitsNoUpstream(t *testing.T) {
+	dir := t.TempDir()
+	initRepo(t, dir)
+	commitFile(t, dir, "a.txt", "hello\n", "chore: init")
+	r, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := r.PushedCommits(context.Background(), 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Commits) != 0 {
+		t.Errorf("expected nothing pushed with no upstream, got %d", len(res.Commits))
+	}
+	if res.Baseline != "" {
+		t.Errorf("expected empty baseline with no push target, got %q", res.Baseline)
+	}
+}

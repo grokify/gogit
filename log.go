@@ -37,6 +37,10 @@ type LogOptions struct {
 	// from the given commit SHA (i.e., "sha..HEAD"). Used for incremental
 	// ingestion with high-water marks.
 	SinceCommit string
+	// Rev logs commits reachable from this revision (e.g. "origin/main" or
+	// "@{upstream}") instead of the default HEAD. Ignored when SinceCommit
+	// is set, which already pins the range to HEAD.
+	Rev string
 	// Author filters by author name or email (git regex semantics).
 	Author string
 	// NoMerges excludes merge commits.
@@ -132,8 +136,11 @@ func (r *Repo) Log(ctx context.Context, opts LogOptions) ([]Commit, error) {
 	if opts.Reverse {
 		args = append(args, "--reverse")
 	}
-	if opts.SinceCommit != "" {
+	switch {
+	case opts.SinceCommit != "":
 		args = append(args, opts.SinceCommit+"..HEAD")
+	case opts.Rev != "":
+		args = append(args, opts.Rev)
 	}
 
 	out, err := r.git(ctx, args...)
