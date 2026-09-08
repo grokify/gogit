@@ -10,9 +10,9 @@ import (
 	"github.com/grokify/gogit"
 )
 
-func testReport() PendingReport {
+func testReport() CommitReport {
 	loc := time.FixedZone("", -7*3600)
-	return PendingReport{
+	return CommitReport{
 		Repo: "/repo",
 		Mode: "unpushed",
 		Ref:  "@{upstream}",
@@ -33,7 +33,7 @@ func testReport() PendingReport {
 
 func TestPendingInvalidFormat(t *testing.T) {
 	var buf bytes.Buffer
-	err := Pending(&buf, "bogus", testReport())
+	err := Commits(&buf, "bogus", testReport())
 	if err == nil {
 		t.Fatal("expected an error for an invalid format")
 	}
@@ -41,7 +41,7 @@ func TestPendingInvalidFormat(t *testing.T) {
 
 func TestPendingTable(t *testing.T) {
 	var buf bytes.Buffer
-	if err := Pending(&buf, "table", testReport()); err != nil {
+	if err := Commits(&buf, "table", testReport()); err != nil {
 		t.Fatal(err)
 	}
 	out := buf.String()
@@ -72,7 +72,7 @@ func TestPendingTableEmpty(t *testing.T) {
 	var buf bytes.Buffer
 	report := testReport()
 	report.Commits = nil
-	if err := Pending(&buf, "table", report); err != nil {
+	if err := Commits(&buf, "table", report); err != nil {
 		t.Fatal(err)
 	}
 	if strings.Contains(buf.String(), "HASH") {
@@ -82,7 +82,7 @@ func TestPendingTableEmpty(t *testing.T) {
 
 func TestPendingMarkdownEscapesPipe(t *testing.T) {
 	var buf bytes.Buffer
-	if err := Pending(&buf, "markdown", testReport()); err != nil {
+	if err := Commits(&buf, "markdown", testReport()); err != nil {
 		t.Fatal(err)
 	}
 	out := buf.String()
@@ -100,7 +100,7 @@ func TestPendingMarkdownEscapesPipe(t *testing.T) {
 
 func TestPendingJSON(t *testing.T) {
 	var buf bytes.Buffer
-	if err := Pending(&buf, "json", testReport()); err != nil {
+	if err := Commits(&buf, "json", testReport()); err != nil {
 		t.Fatal(err)
 	}
 
@@ -213,11 +213,38 @@ func TestPendingSinceCommitMode(t *testing.T) {
 	report := testReport()
 	report.Mode = "since-commit"
 	report.Ref = "abc1234"
-	if err := Pending(&buf, "table", report); err != nil {
+	if err := Commits(&buf, "table", report); err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(buf.String(), "Commits after abc1234: 2") {
 		t.Errorf("expected since-commit header, got: %s", buf.String())
+	}
+}
+
+func TestCommitsPushedMode(t *testing.T) {
+	var buf bytes.Buffer
+	report := testReport()
+	report.Mode = "pushed"
+	report.Ref = "origin/main"
+	if err := Commits(&buf, "table", report); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(buf.String(), "Pushed commits (most recent first, from origin/main): 2") {
+		t.Errorf("expected pushed header, got: %s", buf.String())
+	}
+}
+
+func TestCommitsPushedModeNoTarget(t *testing.T) {
+	var buf bytes.Buffer
+	report := testReport()
+	report.Mode = "pushed"
+	report.Ref = ""
+	report.Commits = nil
+	if err := Commits(&buf, "table", report); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(buf.String(), "branch has no upstream or remote-tracking branch") {
+		t.Errorf("expected no-push-target header, got: %s", buf.String())
 	}
 }
 
@@ -226,7 +253,7 @@ func TestPendingUnpushedAllMode(t *testing.T) {
 	report := testReport()
 	report.Mode = "unpushed-all"
 	report.Ref = "" // no baseline
-	if err := Pending(&buf, "table", report); err != nil {
+	if err := Commits(&buf, "table", report); err != nil {
 		t.Fatal(err)
 	}
 	out := buf.String()

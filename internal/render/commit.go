@@ -15,11 +15,11 @@ import (
 	"github.com/grokify/gogit"
 )
 
-// PendingFormats lists the format values Pending accepts.
-var PendingFormats = []string{"table", "markdown", "json"}
+// CommitFormats lists the format values Commits accepts.
+var CommitFormats = []string{"table", "markdown", "json"}
 
-// PendingTimezones lists the --tz values ApplyTimezone accepts.
-var PendingTimezones = []string{"original", "local", "utc"}
+// CommitTimezones lists the --tz values ApplyTimezone accepts.
+var CommitTimezones = []string{"original", "local", "utc"}
 
 // ApplyTimezone returns a copy of commits with each CommitDate converted
 // per tz: "original" (or "") leaves each commit's own recorded offset
@@ -35,7 +35,7 @@ func ApplyTimezone(commits []gogit.Commit, tz string) ([]gogit.Commit, error) {
 	case "utc":
 		loc = time.UTC
 	default:
-		return nil, fmt.Errorf("render: invalid tz %q, must be one of %s", tz, strings.Join(PendingTimezones, ", "))
+		return nil, fmt.Errorf("render: invalid tz %q, must be one of %s", tz, strings.Join(CommitTimezones, ", "))
 	}
 
 	out := make([]gogit.Commit, len(commits))
@@ -46,41 +46,44 @@ func ApplyTimezone(commits []gogit.Commit, tz string) ([]gogit.Commit, error) {
 	return out, nil
 }
 
-// PendingReport describes a set of commits pending push, for rendering.
-type PendingReport struct {
+// CommitReport describes a labeled list of commits from one repository, as
+// produced by the pending and pushed commands. The rendered table/markdown/
+// json bodies are identical across modes; only the summary header differs.
+type CommitReport struct {
 	Repo string
-	// Mode is one of:
+	// Mode selects the summary header and JSON "mode" value:
 	//   "unpushed"     - commits ahead of Ref (the push baseline)
 	//   "unpushed-all" - no push baseline; every local commit is pending
 	//   "since-commit" - commits after the explicit Ref hash
+	//   "pushed"       - commits already pushed, read from Ref (the baseline)
 	Mode string
 	// Ref is the baseline the commits are measured against: an upstream or
 	// remote-tracking ref, or an explicit commit hash. Empty when Mode is
-	// "unpushed-all".
+	// "unpushed-all", or "pushed" with no push target.
 	Ref     string
 	Commits []gogit.Commit
 }
 
-// Pending renders a PendingReport to w in the given format: "table"
-// (aligned columns via text/tabwriter, for direct terminal reading),
-// "markdown" (copy-pasteable GitHub-flavored table), or "json" (structured
-// envelope, for agents).
-func Pending(w io.Writer, format string, report PendingReport) error {
+// Commits renders a CommitReport to w in the given format: "table" (aligned
+// columns via text/tabwriter, for direct terminal reading), "markdown"
+// (copy-pasteable GitHub-flavored table), or "json" (structured envelope,
+// for agents).
+func Commits(w io.Writer, format string, report CommitReport) error {
 	switch format {
 	case "json":
-		return pendingJSON(w, report)
+		return commitsJSON(w, report)
 	case "markdown":
-		pendingMarkdown(w, report)
+		commitsMarkdown(w, report)
 	case "table":
-		pendingTable(w, report)
+		commitsTable(w, report)
 	default:
-		return fmt.Errorf("render: invalid format %q, must be one of %s", format, strings.Join(PendingFormats, ", "))
+		return fmt.Errorf("render: invalid format %q, must be one of %s", format, strings.Join(CommitFormats, ", "))
 	}
 	return nil
 }
 
-// pendingCommitJSON is the JSON representation of one pending commit.
-type pendingCommitJSON struct {
+// commitRowJSON is the JSON representation of one commit.
+type commitRowJSON struct {
 	Hash      string `json:"hash"`
 	Weekday   string `json:"weekday"`   // Sun, Mon, ..., Sat, in the commit's rendered timezone
 	Date      string `json:"date"`      // 2006-01-02, in the commit's rendered timezone
@@ -89,25 +92,25 @@ type pendingCommitJSON struct {
 	Message   string `json:"message"`
 }
 
-// pendingReportJSON is the JSON envelope for the pending-commits report.
-type pendingReportJSON struct {
-	Repo    string              `json:"repo"`
-	Mode    string              `json:"mode"` // "unpushed", "unpushed-all", or "since-commit"
-	Ref     string              `json:"ref"`  // baseline ref or hash; empty for "unpushed-all"
-	Count   int                 `json:"count"`
-	Commits []pendingCommitJSON `json:"commits"`
+// commitReportJSON is the JSON envelope for a commit report.
+type commitReportJSON struct {
+	Repo    string          `json:"repo"`
+	Mode    string          `json:"mode"` // see CommitReport.Mode
+	Ref     string          `json:"ref"`  // baseline ref or hash; may be empty
+	Count   int             `json:"count"`
+	Commits []commitRowJSON `json:"commits"`
 }
 
-func pendingJSON(w io.Writer, report PendingReport) error {
-	out := pendingReportJSON{
+func commitsJSON(w io.Writer, report CommitReport) error {
+	out := commitReportJSON{
 		Repo:    report.Repo,
 		Mode:    report.Mode,
 		Ref:     report.Ref,
 		Count:   len(report.Commits),
-		Commits: make([]pendingCommitJSON, 0, len(report.Commits)),
+		Commits: make([]commitRowJSON, 0, len(report.Commits)),
 	}
 	for _, c := range report.Commits {
-		out.Commits = append(out.Commits, pendingCommitJSON{
+		out.Commits = append(out.Commits, commitRowJSON{
 			Hash:      c.Hash,
 			Weekday:   weekday(c.CommitDate),
 			Date:      c.CommitDate.Format("2006-01-02"),
@@ -122,24 +125,30 @@ func pendingJSON(w io.Writer, report PendingReport) error {
 	return enc.Encode(out)
 }
 
-// pendingHeader writes the report summary line shared by every non-JSON
+// commitHeader writes the report summary line shared by every non-JSON
 // format.
-func pendingHeader(w io.Writer, report PendingReport) {
+func commitHeader(w io.Writer, report CommitReport) {
 	fmt.Fprintf(w, "Repo: %s\n", report.Repo)
 	switch report.Mode {
 	case "since-commit":
 		fmt.Fprintf(w, "Commits after %s: %d\n\n", report.Ref, len(report.Commits))
 	case "unpushed-all":
 		fmt.Fprintf(w, "Pending commits (no upstream configured; all local commits unpushed): %d\n\n", len(report.Commits))
+	case "pushed":
+		if report.Ref == "" {
+			fmt.Fprintf(w, "Pushed commits: %d (branch has no upstream or remote-tracking branch)\n\n", len(report.Commits))
+		} else {
+			fmt.Fprintf(w, "Pushed commits (most recent first, from %s): %d\n\n", report.Ref, len(report.Commits))
+		}
 	default: // "unpushed"
 		fmt.Fprintf(w, "Pending commits (not yet pushed to %s): %d\n\n", report.Ref, len(report.Commits))
 	}
 }
 
-// pendingTable renders an aligned plain-text table via text/tabwriter,
+// commitsTable renders an aligned plain-text table via text/tabwriter,
 // meant to be read directly in a terminal.
-func pendingTable(w io.Writer, report PendingReport) {
-	pendingHeader(w, report)
+func commitsTable(w io.Writer, report CommitReport) {
+	commitHeader(w, report)
 	if len(report.Commits) == 0 {
 		return
 	}
@@ -154,10 +163,10 @@ func pendingTable(w io.Writer, report PendingReport) {
 	tw.Flush()
 }
 
-// pendingMarkdown renders a copy-pasteable GitHub-flavored markdown table
+// commitsMarkdown renders a copy-pasteable GitHub-flavored markdown table
 // (e.g. for pasting into a PR description or issue).
-func pendingMarkdown(w io.Writer, report PendingReport) {
-	pendingHeader(w, report)
+func commitsMarkdown(w io.Writer, report CommitReport) {
+	commitHeader(w, report)
 	if len(report.Commits) == 0 {
 		return
 	}

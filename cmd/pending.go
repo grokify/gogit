@@ -82,7 +82,7 @@ func runPending(cmd *cobra.Command, args []string) error {
 		mode = "unpushed-all"
 	}
 
-	return render.Pending(os.Stdout, pendingFormat, render.PendingReport{
+	return render.Commits(os.Stdout, pendingFormat, render.CommitReport{
 		Repo:    absPath,
 		Mode:    mode,
 		Ref:     res.Baseline,
