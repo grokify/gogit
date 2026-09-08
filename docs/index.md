@@ -74,4 +74,4 @@ go install github.com/grokify/gogit/cmd/gitscan@latest
 ```
 
 See the [README](https://github.com/grokify/gogit#readme) for full CLI
-usage, and [Releases](releases/v0.9.0.md) for version history.
+usage, and [Releases](releases/v0.10.0.md) for version history.
