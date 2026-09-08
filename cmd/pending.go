@@ -80,20 +80,29 @@ func runPending(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("--since-commit applies to a single repository, but %d were found under the given path(s)", len(repos))
 	}
 
-	var progressFn gogit.ProgressFunc
+	// Progress goes to stderr so stdout stays clean for JSON and piping, and
+	// only for a multi-repo sweep (a single repo is checked instantly). The
+	// bar is flushed before the report so the two never interleave.
+	var (
+		renderer   *progress.SingleStageRenderer
+		progressFn gogit.ProgressFunc
+	)
 	if len(repos) > 1 {
-		// Progress goes to stderr so stdout stays clean for JSON and piping.
-		renderer := progress.NewSingleStageRenderer(os.Stderr).WithBarWidth(progressBarWidth)
+		fmt.Fprintf(os.Stderr, "Checking %d repositories for unpushed commits...\n", len(repos))
+		renderer = progress.NewSingleStageRenderer(os.Stderr).WithBarWidth(progressBarWidth)
 		progressFn = func(done, total int, path string) {
 			renderer.Update(done, total, filepath.Base(path))
 		}
-		defer renderer.Done("")
 	}
 
 	results := gogit.RunAllWithProgress(context.Background(), repos,
 		func(ctx context.Context, r *gogit.Repo) (gogit.PendingResult, error) {
 			return r.PendingCommits(ctx, pendingSinceCommit)
 		}, 0, progressFn)
+
+	if renderer != nil {
+		renderer.Done(fmt.Sprintf("Checked %d repositories.", len(repos)))
+	}
 
 	reports := make([]render.CommitReport, len(results))
 	for i, res := range results {
