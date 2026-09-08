@@ -34,7 +34,6 @@ Use --unpushed to only show repos with uncommitted changes or unpushed commits.`
 }
 
 func init() {
-	orderCmd.Flags().StringVarP(&dirPath, "dir", "d", "", "Directory to scan")
 	orderCmd.Flags().StringVarP(&orderSinceStr, "since", "s", "", "Filter repos modified within duration (e.g., 7d, 14d, 2w, 1m)")
 	orderCmd.Flags().BoolVarP(&includeTransitive, "transitive", "t", false, "Include repos that transitively depend on modified repos")
 	orderCmd.Flags().BoolVarP(&unpushedOnly, "unpushed", "u", false, "Only show repos with uncommitted changes or unpushed commits")
@@ -42,13 +41,6 @@ func init() {
 }
 
 func runOrder(cmd *cobra.Command, args []string) error {
-	if len(args) > 0 && dirPath == "" {
-		dirPath = args[0]
-	}
-	if dirPath == "" {
-		return fmt.Errorf("directory path required\nUsage: gitscan order [directory] or gitscan order -d <directory>")
-	}
-
 	var sinceDuration time.Duration
 	if orderSinceStr != "" {
 		var err error
@@ -58,7 +50,7 @@ func runOrder(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	absPath, err := cliutil.ResolvePath(dirPath)
+	absPath, err := cliutil.ResolvePath(dirArg(args, 0))
 	if err != nil {
 		return err
 	}

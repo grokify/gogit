@@ -14,6 +14,7 @@ import (
 var (
 	sinceDepFilter    string
 	sinceUnpushedOnly bool
+	sinceRecurse      bool
 )
 
 var sinceCmd = &cobra.Command{
@@ -24,6 +25,8 @@ var sinceCmd = &cobra.Command{
 The duration specifies the time window for filtering. Repos modified within
 that duration are shown. When combined with --dep and/or --unpushed, filters
 are applied with AND logic.
+
+directory defaults to the current directory.
 
 Duration formats:
   7d   - 7 days
@@ -42,7 +45,7 @@ Examples:
 func init() {
 	sinceCmd.Flags().StringVar(&sinceDepFilter, "dep", "", "Also filter by dependency (AND logic)")
 	sinceCmd.Flags().BoolVarP(&sinceUnpushedOnly, "unpushed", "u", false, "Only show repos with uncommitted changes or unpushed commits")
-	sinceCmd.Flags().BoolVarP(&recurse, "recurse", "r", false, "Check nested go.mod files")
+	sinceCmd.Flags().BoolVarP(&sinceRecurse, "recurse", "r", false, "Check nested go.mod files")
 	rootCmd.AddCommand(sinceCmd)
 }
 
@@ -53,12 +56,7 @@ func runSince(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("invalid duration %q: %v\nValid formats: 7d (days), 2w (weeks), 1m (months), 24h (hours)", sinceStr, err)
 	}
 
-	if len(args) < 2 {
-		return fmt.Errorf("directory path required\nUsage: gitscan since <duration> [directory]")
-	}
-	scanDir := args[1]
-
-	absPath, err := cliutil.ResolvePath(scanDir)
+	absPath, err := cliutil.ResolvePath(dirArg(args, 1))
 	if err != nil {
 		return err
 	}
@@ -77,7 +75,7 @@ func runSince(cmd *cobra.Command, args []string) error {
 	}
 
 	opts := scanner.ScanOptions{
-		Recurse:       recurse,
+		Recurse:       sinceRecurse,
 		CheckModTime:  true,
 		CheckUnpushed: sinceUnpushedOnly,
 		GitBackend:    createGitBackend(),

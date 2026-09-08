@@ -5,18 +5,26 @@ import (
 	"testing"
 )
 
-func TestRunOrderRequiresDirectory(t *testing.T) {
+func TestRunOrderDefaultsToCurrentDir(t *testing.T) {
 	resetFlags(t)
-	if err := runOrder(nil, nil); err == nil {
-		t.Fatal("expected an error when no directory is given")
+	root := t.TempDir()
+	fixtureRepo(t, root, "base", "module github.com/example/base\n\ngo 1.25\n")
+	t.Chdir(root)
+
+	out := captureStdout(t, func() {
+		if err := runOrder(nil, nil); err != nil {
+			t.Fatal(err)
+		}
+	})
+	if !strings.Contains(reportSection(out), "base") {
+		t.Errorf("expected the repo listed when ordering the current directory: %s", out)
 	}
 }
 
 func TestRunOrderInvalidDuration(t *testing.T) {
 	resetFlags(t)
-	dirPath = t.TempDir()
 	orderSinceStr = "bogus"
-	if err := runOrder(nil, nil); err == nil {
+	if err := runOrder(nil, []string{t.TempDir()}); err == nil {
 		t.Fatal("expected an error for an invalid --since duration")
 	}
 }
@@ -27,9 +35,8 @@ func TestRunOrderEndToEnd(t *testing.T) {
 	fixtureRepo(t, root, "base", "module github.com/example/base\n\ngo 1.25\n")
 	fixtureRepo(t, root, "dependent", "module github.com/example/dependent\n\ngo 1.25\n\nrequire github.com/example/base v0.0.0\n")
 
-	dirPath = root
 	out := captureStdout(t, func() {
-		if err := runOrder(nil, nil); err != nil {
+		if err := runOrder(nil, []string{root}); err != nil {
 			t.Fatal(err)
 		}
 	})

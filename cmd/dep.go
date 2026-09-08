@@ -12,6 +12,7 @@ import (
 )
 
 var (
+	depRecurse    bool
 	depDirectOnly bool
 	depPrefix     bool
 )
@@ -22,6 +23,8 @@ var depCmd = &cobra.Command{
 	Long: `Filter repositories by dependency on a specific module.
 
 Lists all repositories that depend on the specified Go module path.
+
+directory defaults to the current directory.
 
 By default, matches both direct and indirect (transitive) requirements.
 Use --direct-only to find repos that require the module themselves, e.g. to
@@ -41,7 +44,7 @@ Examples:
 }
 
 func init() {
-	depCmd.Flags().BoolVarP(&recurse, "recurse", "r", false, "Check nested go.mod files")
+	depCmd.Flags().BoolVarP(&depRecurse, "recurse", "r", false, "Check nested go.mod files")
 	depCmd.Flags().BoolVarP(&depDirectOnly, "direct-only", "D", false, "Only match direct requirements (excludes // indirect)")
 	depCmd.Flags().BoolVar(&depPrefix, "prefix", false, "Match module path as a prefix (e.g. to match any major version)")
 	rootCmd.AddCommand(depCmd)
@@ -50,12 +53,7 @@ func init() {
 func runDep(cmd *cobra.Command, args []string) error {
 	depFilter := args[0]
 
-	if len(args) < 2 {
-		return fmt.Errorf("directory path required\nUsage: gitscan dep <module> [directory]")
-	}
-	scanDir := args[1]
-
-	absPath, err := cliutil.ResolvePath(scanDir)
+	absPath, err := cliutil.ResolvePath(dirArg(args, 1))
 	if err != nil {
 		return err
 	}
@@ -74,7 +72,7 @@ func runDep(cmd *cobra.Command, args []string) error {
 	}
 
 	opts := scanner.ScanOptions{
-		Recurse:    recurse,
+		Recurse:    depRecurse,
 		GitBackend: createGitBackend(),
 	}
 	results, err := scanner.ScanDirectoryWithProgress(absPath, progressFn, opts)
@@ -87,7 +85,7 @@ func runDep(cmd *cobra.Command, args []string) error {
 		ModulePath: depFilter,
 		DirectOnly: depDirectOnly,
 		Prefix:     depPrefix,
-		Recurse:    recurse,
+		Recurse:    depRecurse,
 	})
 	return nil
 }

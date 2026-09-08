@@ -17,9 +17,11 @@ const (
 )
 
 var (
-	showClean   bool
-	showSummary bool
-	format      string
+	showClean      bool
+	showSummary    bool
+	format         string
+	checkWorkflows bool
+	refRepo        string
 )
 
 var rootCmd = &cobra.Command{
@@ -29,17 +31,19 @@ var rootCmd = &cobra.Command{
 It helps developers prioritize which repositories to update, commit, and push
 by detecting uncommitted changes, replace directives, and module mismatches.
 
-Use subcommands for filtering:
+directory defaults to the current directory.
+
+Subcommands:
   gitscan since <duration> [dir]   Filter by modification time
   gitscan dep <module> [dir]       Filter by dependency
-  gitscan order [dir]              Show repos in dependency order`,
+  gitscan order [dir]              Show repos in dependency order
+  gitscan pending [dir]            List commits not yet pushed in one repo`,
 	Version: version,
 	Args:    cobra.MaximumNArgs(1),
 	RunE:    runScan,
 }
 
 func init() {
-	rootCmd.Flags().StringVarP(&dirPath, "dir", "d", "", "Directory to scan")
 	rootCmd.Flags().BoolVar(&showClean, "show-clean", false, "Show repos with no issues")
 	rootCmd.Flags().BoolVar(&showSummary, "summary", true, "Show summary at the end")
 	rootCmd.Flags().StringVarP(&format, "format", "f", "list", "Output format: list or table")
@@ -55,14 +59,7 @@ func Execute() {
 }
 
 func runScan(cmd *cobra.Command, args []string) error {
-	if len(args) > 0 && dirPath == "" {
-		dirPath = args[0]
-	}
-	if dirPath == "" {
-		return fmt.Errorf("directory path required\nUsage: gitscan [directory] or gitscan -d <directory>")
-	}
-
-	absPath, err := cliutil.ResolvePath(dirPath)
+	absPath, err := cliutil.ResolvePath(dirArg(args, 0))
 	if err != nil {
 		return err
 	}

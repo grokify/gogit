@@ -91,8 +91,6 @@ func fixtureRepo(t *testing.T, root, name, gomod string) string {
 // don't leak state into each other.
 func resetFlags(t *testing.T) {
 	t.Helper()
-	dirPath = ""
-	recurse = false
 	checkWorkflows = false
 	refRepo = "plexusone/.github"
 	showClean = false
@@ -100,6 +98,8 @@ func resetFlags(t *testing.T) {
 	format = "list"
 	sinceDepFilter = ""
 	sinceUnpushedOnly = false
+	sinceRecurse = false
+	depRecurse = false
 	depDirectOnly = false
 	depPrefix = false
 	orderSinceStr = ""

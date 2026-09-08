@@ -5,10 +5,19 @@ import (
 	"testing"
 )
 
-func TestRunDepRequiresDirectory(t *testing.T) {
+func TestRunDepDefaultsToCurrentDir(t *testing.T) {
 	resetFlags(t)
-	if err := runDep(nil, []string{"github.com/grokify/mogo"}); err == nil {
-		t.Fatal("expected an error when no directory is given")
+	root := t.TempDir()
+	fixtureRepo(t, root, "consumer", "module github.com/example/consumer\n\ngo 1.25\n\nrequire github.com/grokify/mogo v0.74.8\n")
+	t.Chdir(root)
+
+	out := captureStdout(t, func() {
+		if err := runDep(nil, []string{"github.com/grokify/mogo"}); err != nil {
+			t.Fatal(err)
+		}
+	})
+	if !strings.Contains(reportSection(out), "consumer") {
+		t.Errorf("expected consumer listed when scanning the current directory: %s", out)
 	}
 }
 

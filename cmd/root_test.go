@@ -19,19 +19,27 @@ func TestRootRegistersSubcommands(t *testing.T) {
 	}
 }
 
-func TestRunScanRequiresDirectory(t *testing.T) {
+func TestRunScanDefaultsToCurrentDir(t *testing.T) {
 	resetFlags(t)
-	if err := runScan(nil, nil); err == nil {
-		t.Fatal("expected an error when no directory is given")
+	root := t.TempDir()
+	fixtureRepo(t, root, "repo", "")
+	t.Chdir(root)
+
+	out := captureStdout(t, func() {
+		if err := runScan(nil, nil); err != nil {
+			t.Fatal(err)
+		}
+	})
+	if !strings.Contains(out, "Summary:") {
+		t.Errorf("expected a summary line when scanning the current directory: %s", out)
 	}
 }
 
 func TestRunScanInvalidFormat(t *testing.T) {
 	resetFlags(t)
-	dirPath = t.TempDir()
 	format = "bogus"
 	captureStdout(t, func() {
-		if err := runScan(nil, nil); err == nil {
+		if err := runScan(nil, []string{t.TempDir()}); err == nil {
 			t.Fatal("expected an error for an invalid --format value")
 		}
 	})
@@ -45,9 +53,8 @@ func TestRunScanEndToEnd(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	dirPath = root
 	out := captureStdout(t, func() {
-		if err := runScan(nil, nil); err != nil {
+		if err := runScan(nil, []string{root}); err != nil {
 			t.Fatal(err)
 		}
 	})
