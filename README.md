@@ -97,19 +97,23 @@ go install github.com/grokify/gogit/cmd/gitscan@latest
 
 ```bash
 git clone https://github.com/grokify/gogit.git
-cd gitscan
-go build -o gitscan .
+cd gogit
+go build -o gitscan ./cmd/gitscan
 ```
 
 ## Usage
 
 ```bash
-gitscan <directory>              # Scan for issues
+gitscan [directory]              # Scan for issues (defaults to current dir)
 gitscan since <duration> [dir]   # Filter by modification time
 gitscan dep <module> [dir]       # Filter by dependency
 gitscan order [dir]              # Show repos in dependency order
-gitscan pending [dir]            # List commits not yet pushed
+gitscan pending [path...]        # List unpushed commits, across one or many repos
+gitscan pushed [count] [dir]     # List the most recent pushed commits
 ```
+
+The scan directory is a positional argument that defaults to the current
+directory; there is no `-d`/`--dir` flag.
 
 ### Root Command (Issue Scanning)
 
@@ -119,9 +123,10 @@ Scan repos for uncommitted changes, replace directives, and module mismatches:
 gitscan ~/go/src/github.com/grokify
 ```
 
+The directory to scan is the (optional) positional argument, defaulting to the current directory.
+
 | Flag | Short | Default | Description |
 |------|-------|---------|-------------|
-| `--dir` | `-d` | (required) | Directory containing repos to scan |
 | `--format` | `-f` | `list` | Output format: `list` or `table` |
 | `--show-clean` | | `false` | Show repos with no issues |
 | `--summary` | | `true` | Show summary at the end |
@@ -152,9 +157,10 @@ gitscan since <duration> [directory]
 | Flag | Short | Default | Description |
 |------|-------|---------|-------------|
 | `--dep` | | (none) | Also filter by dependency (AND logic) |
+| `--unpushed` | `-u` | `false` | Only show repos with uncommitted changes or unpushed commits (AND logic) |
 | `--recurse` | `-r` | `false` | Check nested go.mod files |
 
-Duration formats: `7d` (days), `2w` (weeks), `1m` (months), `24h` (hours)
+Duration formats: `7d` (days), `2w` (weeks), `1m` (months), `24h` (hours). `directory` defaults to the current directory.
 
 ### Since Examples
 
@@ -198,32 +204,40 @@ gitscan dep github.com/google/go-github ~/go/src/github.com/grokify --prefix --d
 
 ## Pending Subcommand
 
-Report commits in a single git repository (not a directory of repos) that are ahead of its upstream — not yet pushed — or that come after an explicit commit hash. Useful for pre-push review, or for feeding an agent a structured list of what's about to be pushed.
+Report commits that are ahead of their upstream — not yet pushed — across one or more repositories. Useful for pre-push review, for a morning sweep of everything you have waiting to push, or for feeding an agent a structured list of what's about to go out.
 
 ```bash
-gitscan pending [directory]
+gitscan pending [path...]
 ```
+
+Each `path` is either a git repository (reported directly) or a directory whose repositories are discovered (one level deep by default; use `--depth` to go deeper) and each reported in turn. Pass several paths — e.g. one per GitHub org you manage — to sweep them together. With no path, the current directory is used.
 
 | Flag | Short | Default | Description |
 |------|-------|---------|-------------|
-| `--since-commit` | | (none) | List commits after this hash instead of unpushed commits (doesn't require an upstream) |
+| `--since-commit` | | (none) | List commits after this hash instead of unpushed commits (single repo only) |
 | `--format` | `-f` | `table` | Output format: `table` (aligned, for terminals), `markdown` (copy-pasteable), or `json` |
 | `--tz` | | `original` | Timestamp timezone: `original` (as recorded by git, per-commit), `local` (this machine's timezone), or `utc` |
+| `--depth` | | `1` | How many directory levels below each path to search for repositories |
 
-`directory` defaults to the current directory. In the default mode (no `--since-commit`), the branch must have an upstream configured (`git push -u ...` at least once) — otherwise the command errors and asks for an explicit `--since-commit` hash.
+By default the baseline for "pending" is each branch's push target — its configured upstream, or the matching remote-tracking branch (e.g. `origin/main`). A branch that was **never pushed** has no such target, so *all* of its commits are reported as pending (rather than erroring). Use `--since-commit` to list commits after a specific hash instead; that applies to a single repository only.
 
-Timestamps are RFC 3339 with an explicit UTC offset (`Z` for exact UTC, otherwise numeric, e.g. `-07:00`). By default each commit keeps its own recorded timezone — which is usually your local time if you commit from one machine, but won't be normalized across collaborators or CI in different timezones. Use `--tz utc` or `--tz local` to convert every timestamp to one consistent zone instead.
+The output shape is invariant in the number of repositories: a single repo is just a fleet of one. In a multi-repo sweep, repositories with nothing pending are omitted from the table/markdown views (the summary still counts them), and progress is shown on stderr so stdout stays clean for piping and JSON.
+
+Timestamps are RFC 3339 with an explicit UTC offset (`Z` for exact UTC, otherwise numeric, e.g. `-07:00`). By default each commit keeps its own recorded timezone; `--tz utc` or `--tz local` converts every timestamp to one consistent zone.
 
 ### Pending Examples
 
 ```bash
-# Commits not yet pushed, in the current directory
+# Unpushed commits in the current repo
 gitscan pending
 
-# Commits not yet pushed, in another repo
+# ...in another repo
 gitscan pending ~/go/src/github.com/me/repo
 
-# Commits after a specific hash, regardless of upstream
+# Sweep every repo across several orgs you manage
+gitscan pending ~/go/src/github.com/{myorg,myuser}
+
+# Commits after a specific hash (single repo)
 gitscan pending --since-commit abc1234
 
 # Copy-pasteable markdown table (e.g. for a PR description)
@@ -238,15 +252,23 @@ gitscan pending --tz utc
 
 ### Pending Output
 
-Table format (default; aligned columns via `text/tabwriter`, meant to be read directly in a terminal):
+Table format (default; aligned columns via `text/tabwriter`, meant to be read directly in a terminal). A multi-repo sweep prints one section per repo with pending work, then a summary:
 
 ```
-Repo: /Users/me/go/src/github.com/me/repo
+Repo: /Users/me/go/src/github.com/myorg/service-a
 Pending commits (not yet pushed to @{upstream}): 2
 
 #  HASH     DAY  TIMESTAMP                  MESSAGE
 1  1fbde76  Mon  2026-09-07T12:16:02-07:00  feat: add b
 2  af0101e  Mon  2026-09-07T12:16:05-07:00  feat: add c
+
+Repo: /Users/me/go/src/github.com/myorg/service-b
+Pending commits (no upstream configured; all local commits unpushed): 1
+
+#  HASH     DAY  TIMESTAMP                  MESSAGE
+1  9c1d2e0  Tue  2026-09-08T09:03:11-07:00  feat: initial import
+
+Summary: 42 repos scanned, 2 with unpushed commits, 3 commits total
 ```
 
 Markdown format (`--format markdown`; valid GitHub-flavored markdown, e.g. for pasting into a PR description or issue):
@@ -258,26 +280,82 @@ Markdown format (`--format markdown`; valid GitHub-flavored markdown, e.g. for p
 | 2 | af0101e | Mon | 2026-09-07T12:16:05-07:00 | feat: add c |
 ```
 
-JSON format (`--format json`):
+JSON format (`--format json`) is always a `repos` array plus a `summary`, whether one repository or many — so consumers never branch on repo count:
 
 ```json
 {
-  "repo": "/Users/me/go/src/github.com/me/repo",
-  "mode": "unpushed",
-  "ref": "@{upstream}",
-  "count": 2,
-  "commits": [
+  "repos": [
     {
-      "hash": "1fbde76e3b4c9ff29974e52b2e67bcece53ddaf6",
-      "weekday": "Mon",
-      "date": "2026-09-07",
-      "time": "12:16:02",
-      "timestamp": "2026-09-07T12:16:02-07:00",
-      "message": "feat: add b"
+      "repo": "/Users/me/go/src/github.com/myorg/service-a",
+      "mode": "unpushed",
+      "ref": "@{upstream}",
+      "count": 2,
+      "commits": [
+        {
+          "hash": "1fbde76e3b4c9ff29974e52b2e67bcece53ddaf6",
+          "weekday": "Mon",
+          "date": "2026-09-07",
+          "time": "12:16:02",
+          "timestamp": "2026-09-07T12:16:02-07:00",
+          "message": "feat: add b"
+        }
+      ]
     }
-  ]
+  ],
+  "summary": {
+    "reposScanned": 42,
+    "reposWithCommits": 2,
+    "commitsTotal": 3
+  }
 }
 ```
+
+The `mode` field is one of `unpushed` (ahead of the push baseline in `ref`), `unpushed-all` (no push target — every local commit is pending), or `since-commit` (commits after the `ref` hash).
+
+## Pushed Subcommand
+
+The counterpart to `pending`: list the most recent commits already pushed on a repository's current branch — those reachable from its push target (upstream or matching remote-tracking branch) — newest first. Together, `pending` and `pushed` show the recent commits on either side of what has reached the remote.
+
+```bash
+gitscan pushed [count] [directory]
+```
+
+`count` is the number of commits to show and defaults to `10`; `directory` defaults to the current directory. Either positional may be given in either order (the numeric one is the count). When the branch has no push target, nothing is reported as pushed.
+
+| Flag | Short | Default | Description |
+|------|-------|---------|-------------|
+| `--format` | `-f` | `table` | Output format: `table`, `markdown`, or `json` |
+| `--tz` | | `original` | Timestamp timezone: `original`, `local`, or `utc` |
+
+### Pushed Examples
+
+```bash
+# Last 10 pushed commits in the current repo
+gitscan pushed
+
+# Last 25 pushed commits
+gitscan pushed 25
+
+# ...in another repo (count and directory in either order)
+gitscan pushed 25 ~/go/src/github.com/me/repo
+
+# Machine-readable output for agents
+gitscan pushed --format json
+```
+
+### Pushed Output
+
+```
+Repo: /Users/me/go/src/github.com/me/repo
+Pushed commits (most recent first, from @{upstream}): 3
+
+#  HASH     DAY  TIMESTAMP                  MESSAGE
+1  90da58c  Mon  2026-09-07T20:41:29-07:00  fix(release): target the current repo name in goreleaser config
+2  882488a  Mon  2026-09-07T19:43:37-07:00  docs: update changelog for the full commit range
+3  d5f5fa1  Mon  2026-09-07T18:12:04-07:00  feat(cmd): show RFC3339 timestamps with weekday
+```
+
+`pushed` shares `pending`'s `markdown` and `json` formats (the same invariant `repos` + `summary` envelope, with `mode` set to `pushed`).
 
 ## Order Subcommand
 
@@ -287,9 +365,10 @@ Show repos in topological dependency order - dependencies first, then dependents
 gitscan order [directory]
 ```
 
+`directory` is a positional argument that defaults to the current directory.
+
 | Flag | Short | Default | Description |
 |------|-------|---------|-------------|
-| `--dir` | `-d` | (required) | Directory containing repos to scan |
 | `--since` | `-s` | (none) | Filter repos modified within duration |
 | `--transitive` | `-t` | `false` | Include repos that transitively depend on modified repos |
 | `--unpushed` | `-u` | `false` | Only show repos with uncommitted changes or unpushed commits |

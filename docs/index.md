@@ -14,7 +14,8 @@ integrations.
   author/committer identities, subjects, trailers (`Commit.CoAuthors()`
   for `Co-authored-by`), and `--numstat` change stats.
 - **Incremental ingestion** — `LogOptions.SinceCommit` limits output to
-  commits after a given SHA (`sha..HEAD`) for high-water-mark workflows.
+  commits after a given SHA (`sha..HEAD`) for high-water-mark workflows;
+  `LogOptions.Rev` logs from an arbitrary revision instead of HEAD.
 - **Reverse order** — `LogOptions.Reverse` returns commits oldest-first.
 - **AI authorship** — `AnalyzeAuthorship` detects AI coding assistants
   (Claude Code, GitHub Copilot, Gemini CLI, Cursor, Aider) from
@@ -33,9 +34,12 @@ integrations.
   worker count and context cancellation.
 - **Metadata** — `Repo.Branch`, `Repo.OriginURL`, `NormalizeRemoteURL`
   (canonical `host/path` identifiers), `Repo.Tags`, `Repo.TagsWithDates`.
-- **Pending commits** — `Repo.PendingCommits` lists commits ahead of the
-  current branch's upstream, or after an explicit commit hash;
-  `Repo.HasUpstream` checks whether the branch has one configured.
+- **Pending & pushed commits** — `Repo.PendingCommits` lists commits ahead of
+  the branch's push target (its upstream, or the matching remote-tracking
+  branch such as `origin/main`), or after an explicit commit hash; a branch
+  that was never pushed reports every commit as pending. `Repo.PushedCommits`
+  lists the most recent commits already pushed. `Repo.HasUpstream` reports
+  whether an upstream is configured.
 
 ```go
 repo, _ := gogit.Open("/path/to/repo")
@@ -60,9 +64,10 @@ go get github.com/grokify/gogit
 Scan many repositories for ones needing attention: uncommitted or
 unpushed changes, `replace` directives, module/directory mismatches,
 dependency filters, release ordering, and workflow compliance. The
-`pending` subcommand reports commits in a single repo that haven't
-been pushed yet, or that come after an explicit commit hash — as an
-aligned terminal table, copy-pasteable markdown, or JSON for agents.
+`pending` subcommand reports unpushed commits across one or many
+repositories (sweep several org directories at once), and `pushed`
+lists the most recent commits already pushed — both as an aligned
+terminal table, copy-pasteable markdown, or JSON for agents.
 
 ```bash
 go install github.com/grokify/gogit/cmd/gitscan@latest
