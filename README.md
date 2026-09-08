@@ -410,6 +410,19 @@ gitscan shells out to the `git` binary for repository status checks rather than 
 
 go-git's main selling point — no dependency on a `git` binary — doesn't apply here: gitscan's entire job is scanning directories that are *already* git repositories, so a working `git` install is a given. Given that, the CLI backend's speed and exact compatibility with real git semantics (ahead/behind counts, detached HEAD, porcelain edge cases) outweigh go-git's portability benefit, so gitscan doesn't carry a second backend to build and keep bug-for-bug identical to the first.
 
+### Cold vs. Warm Cache
+
+For a fleet-wide sweep (e.g. `gitscan pending` across several org directories), the dominant cost is the OS reading each repository's `.git` metadata, not gitscan's own work. Measured across ~640 repositories:
+
+- **First run of the session (cold filesystem cache):** ~22s — mostly disk I/O paging in git metadata.
+- **Subsequent runs (warm cache):** ~5.5s — already close to the floor of one `git` process spawn per repository.
+
+Extra worker parallelism does not help here: the run is bounded by per-repository `git` startup, not CPU. Reducing the number of `git` invocations per repository would trim warm runs modestly but has little effect on the cold-cache first run, since that data must be read from disk regardless.
+
+### Future: Skip Unchanged Repositories
+
+The highest-leverage speedup for repeated fleet sweeps is to **avoid visiting repos that cannot have changed**. A `--modified-since <duration>` prefilter (reusing the duration parsing already used by `gitscan since`) would `stat` each repository's `.git` and skip any untouched within the window before spawning `git` at all. On a typical day only a handful of a large fleet's repos have recent activity, so this could cut the working set — and the wall time — by 10–50x. This is a planned enhancement, not yet implemented.
+
 ## Use Cases
 
 - **Pre-push audit**: Identify repos with uncommitted work before leaving for vacation
