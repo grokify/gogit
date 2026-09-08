@@ -58,6 +58,43 @@ func TestRunPendingInvalidFormat(t *testing.T) {
 	})
 }
 
+func TestRunPendingInvalidTZ(t *testing.T) {
+	resetFlags(t)
+	root := t.TempDir()
+	repo := fixtureRepo(t, root, "repo", "")
+	pendingSinceCommit = "HEAD" // avoid the upstream check entirely
+	pendingTZ = "mars"
+
+	captureStdout(t, func() {
+		if err := runPending(nil, []string{repo}); err == nil {
+			t.Fatal("expected an error for an invalid --tz value")
+		}
+	})
+}
+
+func TestRunPendingUTCTimezone(t *testing.T) {
+	resetFlags(t)
+	work := pushableRepo(t)
+	if err := os.WriteFile(filepath.Join(work, "b.txt"), []byte("b\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	gitRun(t, work, "add", "-A")
+	gitRun(t, work, "commit", "-q", "-m", "feat: add b")
+
+	pendingTZ = "utc"
+	out := captureStdout(t, func() {
+		if err := runPending(nil, []string{work}); err != nil {
+			t.Fatal(err)
+		}
+	})
+	if !strings.Contains(out, "Z") {
+		t.Errorf("expected a UTC (Z-suffixed) timestamp in output: %s", out)
+	}
+	if strings.ContainsAny(out, "+") {
+		t.Errorf("did not expect a numeric offset with --tz utc: %s", out)
+	}
+}
+
 func TestRunPendingEndToEnd(t *testing.T) {
 	resetFlags(t)
 	work := pushableRepo(t)

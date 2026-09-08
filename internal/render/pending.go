@@ -10,12 +10,41 @@ import (
 	"io"
 	"strings"
 	"text/tabwriter"
+	"time"
 
 	"github.com/grokify/gogit"
 )
 
 // PendingFormats lists the format values Pending accepts.
 var PendingFormats = []string{"table", "markdown", "json"}
+
+// PendingTimezones lists the --tz values ApplyTimezone accepts.
+var PendingTimezones = []string{"original", "local", "utc"}
+
+// ApplyTimezone returns a copy of commits with each CommitDate converted
+// per tz: "original" (or "") leaves each commit's own recorded offset
+// untouched, "local" converts to the calling machine's local timezone, and
+// "utc" converts to UTC.
+func ApplyTimezone(commits []gogit.Commit, tz string) ([]gogit.Commit, error) {
+	var loc *time.Location
+	switch tz {
+	case "", "original":
+		return commits, nil
+	case "local":
+		loc = time.Local
+	case "utc":
+		loc = time.UTC
+	default:
+		return nil, fmt.Errorf("render: invalid tz %q, must be one of %s", tz, strings.Join(PendingTimezones, ", "))
+	}
+
+	out := make([]gogit.Commit, len(commits))
+	for i, c := range commits {
+		c.CommitDate = c.CommitDate.In(loc)
+		out[i] = c
+	}
+	return out, nil
+}
 
 // PendingReport describes a set of commits pending push, for rendering.
 type PendingReport struct {
@@ -46,9 +75,10 @@ func Pending(w io.Writer, format string, report PendingReport) error {
 // pendingCommitJSON is the JSON representation of one pending commit.
 type pendingCommitJSON struct {
 	Hash      string `json:"hash"`
-	Date      string `json:"date"`      // 2006-01-02, committer date
-	Time      string `json:"time"`      // 15:04:05, committer date
-	Timestamp string `json:"timestamp"` // RFC3339 committer date, original offset preserved
+	Weekday   string `json:"weekday"`   // Sun, Mon, ..., Sat, in the commit's rendered timezone
+	Date      string `json:"date"`      // 2006-01-02, in the commit's rendered timezone
+	Time      string `json:"time"`      // 15:04:05, in the commit's rendered timezone
+	Timestamp string `json:"timestamp"` // RFC3339, in the commit's rendered timezone
 	Message   string `json:"message"`
 }
 
@@ -72,9 +102,10 @@ func pendingJSON(w io.Writer, report PendingReport) error {
 	for _, c := range report.Commits {
 		out.Commits = append(out.Commits, pendingCommitJSON{
 			Hash:      c.Hash,
+			Weekday:   weekday(c.CommitDate),
 			Date:      c.CommitDate.Format("2006-01-02"),
 			Time:      c.CommitDate.Format("15:04:05"),
-			Timestamp: c.CommitDate.Format("2006-01-02T15:04:05Z07:00"),
+			Timestamp: rfc3339(c.CommitDate),
 			Message:   c.Subject,
 		})
 	}
@@ -104,10 +135,10 @@ func pendingTable(w io.Writer, report PendingReport) {
 	}
 
 	tw := tabwriter.NewWriter(w, 0, 2, 2, ' ', 0)
-	fmt.Fprintln(tw, "#\tHASH\tDATE\tTIME\tMESSAGE")
+	fmt.Fprintln(tw, "#\tHASH\tDAY\tTIMESTAMP\tMESSAGE")
 	for i, c := range report.Commits {
 		fmt.Fprintf(tw, "%d\t%s\t%s\t%s\t%s\n",
-			i+1, shortHash(c.Hash), c.CommitDate.Format("2006-01-02"), c.CommitDate.Format("15:04:05"),
+			i+1, shortHash(c.Hash), weekday(c.CommitDate), rfc3339(c.CommitDate),
 			sanitizeTabwriterCell(c.Subject))
 	}
 	tw.Flush()
@@ -121,13 +152,25 @@ func pendingMarkdown(w io.Writer, report PendingReport) {
 		return
 	}
 
-	fmt.Fprintln(w, "| # | Hash | Date | Time | Message |")
-	fmt.Fprintln(w, "|---|------|------|------|---------|")
+	fmt.Fprintln(w, "| # | Hash | Day | Timestamp | Message |")
+	fmt.Fprintln(w, "|---|------|-----|-----------|---------|")
 	for i, c := range report.Commits {
 		fmt.Fprintf(w, "| %d | %s | %s | %s | %s |\n",
-			i+1, shortHash(c.Hash), c.CommitDate.Format("2006-01-02"), c.CommitDate.Format("15:04:05"),
+			i+1, shortHash(c.Hash), weekday(c.CommitDate), rfc3339(c.CommitDate),
 			escapeMarkdownCell(c.Subject))
 	}
+}
+
+// rfc3339 formats t as RFC 3339 with an explicit timezone: "Z" for exact
+// UTC, otherwise a numeric offset (e.g. "-07:00").
+func rfc3339(t time.Time) string {
+	return t.Format("2006-01-02T15:04:05Z07:00")
+}
+
+// weekday returns t's day of week as a 3-letter abbreviation: Sun, Mon,
+// Tue, Wed, Thu, Fri, or Sat.
+func weekday(t time.Time) string {
+	return t.Format("Mon")
 }
 
 // shortHash returns the standard 7-character abbreviated form of a commit

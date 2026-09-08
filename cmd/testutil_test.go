@@ -107,4 +107,5 @@ func resetFlags(t *testing.T) {
 	unpushedOnly = false
 	pendingSinceCommit = ""
 	pendingFormat = "table"
+	pendingTZ = "original"
 }

@@ -208,8 +208,11 @@ gitscan pending [directory]
 |------|-------|---------|-------------|
 | `--since-commit` | | (none) | List commits after this hash instead of unpushed commits (doesn't require an upstream) |
 | `--format` | `-f` | `table` | Output format: `table` (aligned, for terminals), `markdown` (copy-pasteable), or `json` |
+| `--tz` | | `original` | Timestamp timezone: `original` (as recorded by git, per-commit), `local` (this machine's timezone), or `utc` |
 
 `directory` defaults to the current directory. In the default mode (no `--since-commit`), the branch must have an upstream configured (`git push -u ...` at least once) — otherwise the command errors and asks for an explicit `--since-commit` hash.
+
+Timestamps are RFC 3339 with an explicit UTC offset (`Z` for exact UTC, otherwise numeric, e.g. `-07:00`). By default each commit keeps its own recorded timezone — which is usually your local time if you commit from one machine, but won't be normalized across collaborators or CI in different timezones. Use `--tz utc` or `--tz local` to convert every timestamp to one consistent zone instead.
 
 ### Pending Examples
 
@@ -228,6 +231,9 @@ gitscan pending --format markdown
 
 # Machine-readable output for agents
 gitscan pending --format json
+
+# Normalize all timestamps to UTC (or --tz local for this machine's timezone)
+gitscan pending --tz utc
 ```
 
 ### Pending Output
@@ -238,18 +244,18 @@ Table format (default; aligned columns via `text/tabwriter`, meant to be read di
 Repo: /Users/me/go/src/github.com/me/repo
 Pending commits (not yet pushed to @{upstream}): 2
 
-#  HASH     DATE        TIME      MESSAGE
-1  1fbde76  2026-09-07  12:16:02  feat: add b
-2  af0101e  2026-09-07  12:16:05  feat: add c
+#  HASH     DAY  TIMESTAMP                  MESSAGE
+1  1fbde76  Mon  2026-09-07T12:16:02-07:00  feat: add b
+2  af0101e  Mon  2026-09-07T12:16:05-07:00  feat: add c
 ```
 
 Markdown format (`--format markdown`; valid GitHub-flavored markdown, e.g. for pasting into a PR description or issue):
 
 ```
-| # | Hash | Date | Time | Message |
-|---|------|------|------|---------|
-| 1 | 1fbde76 | 2026-09-07 | 12:16:02 | feat: add b |
-| 2 | af0101e | 2026-09-07 | 12:16:05 | feat: add c |
+| # | Hash | Day | Timestamp | Message |
+|---|------|-----|-----------|---------|
+| 1 | 1fbde76 | Mon | 2026-09-07T12:16:02-07:00 | feat: add b |
+| 2 | af0101e | Mon | 2026-09-07T12:16:05-07:00 | feat: add c |
 ```
 
 JSON format (`--format json`):
@@ -263,6 +269,7 @@ JSON format (`--format json`):
   "commits": [
     {
       "hash": "1fbde76e3b4c9ff29974e52b2e67bcece53ddaf6",
+      "weekday": "Mon",
       "date": "2026-09-07",
       "time": "12:16:02",
       "timestamp": "2026-09-07T12:16:02-07:00",
