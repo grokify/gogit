@@ -90,10 +90,10 @@ func runPushed(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	return render.Commits(os.Stdout, pushedFormat, render.CommitReport{
+	return render.Commits(os.Stdout, pushedFormat, []render.CommitReport{{
 		Repo:    absPath,
 		Mode:    "pushed",
 		Ref:     res.Baseline,
 		Commits: commits,
-	})
+	}})
 }

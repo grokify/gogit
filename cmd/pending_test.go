@@ -51,6 +51,41 @@ func TestRunPendingNoUpstreamListsAll(t *testing.T) {
 	}
 }
 
+func TestRunPendingFleet(t *testing.T) {
+	resetFlags(t)
+	root := t.TempDir()
+	fixtureRepo(t, root, "alpha", "")
+	fixtureRepo(t, root, "beta", "")
+
+	out := captureStdout(t, func() {
+		if err := runPending(nil, []string{root}); err != nil {
+			t.Fatal(err)
+		}
+	})
+	for _, name := range []string{"alpha", "beta"} {
+		if !strings.Contains(out, name) {
+			t.Errorf("expected repo %q in fleet output: %s", name, out)
+		}
+	}
+	if !strings.Contains(out, "Summary: 2 repos scanned, 2 with unpushed commits, 2 commits total") {
+		t.Errorf("unexpected summary: %s", out)
+	}
+}
+
+func TestRunPendingSinceCommitMultiRepoErrors(t *testing.T) {
+	resetFlags(t)
+	root := t.TempDir()
+	fixtureRepo(t, root, "alpha", "")
+	fixtureRepo(t, root, "beta", "")
+	pendingSinceCommit = "HEAD"
+
+	captureStdout(t, func() {
+		if err := runPending(nil, []string{root}); err == nil {
+			t.Fatal("expected an error: --since-commit cannot span multiple repositories")
+		}
+	})
+}
+
 func TestRunPendingInvalidFormat(t *testing.T) {
 	resetFlags(t)
 	root := t.TempDir()

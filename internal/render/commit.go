@@ -48,10 +48,10 @@ func ApplyTimezone(commits []gogit.Commit, tz string) ([]gogit.Commit, error) {
 
 // CommitReport describes a labeled list of commits from one repository, as
 // produced by the pending and pushed commands. The rendered table/markdown/
-// json bodies are identical across modes; only the summary header differs.
+// json bodies are identical across modes; only the per-repo header differs.
 type CommitReport struct {
 	Repo string
-	// Mode selects the summary header and JSON "mode" value:
+	// Mode selects the per-repo header and JSON "mode" value:
 	//   "unpushed"     - commits ahead of Ref (the push baseline)
 	//   "unpushed-all" - no push baseline; every local commit is pending
 	//   "since-commit" - commits after the explicit Ref hash
@@ -62,20 +62,28 @@ type CommitReport struct {
 	// "unpushed-all", or "pushed" with no push target.
 	Ref     string
 	Commits []gogit.Commit
+	// Err, when non-empty, records why this repository could not be read.
+	Err string
 }
 
-// Commits renders a CommitReport to w in the given format: "table" (aligned
-// columns via text/tabwriter, for direct terminal reading), "markdown"
-// (copy-pasteable GitHub-flavored table), or "json" (structured envelope,
-// for agents).
-func Commits(w io.Writer, format string, report CommitReport) error {
+// Commits renders a set of per-repo CommitReports to w in the given format:
+// "table" (aligned columns via text/tabwriter, for direct terminal reading),
+// "markdown" (copy-pasteable GitHub-flavored tables), or "json" (structured
+// envelope, for agents).
+//
+// The output shape is invariant in the number of repositories: a single
+// repository is simply a set of one, so callers and JSON consumers never have
+// to branch on how many repos were reported. In multi-repo output, repos with
+// no matching commits (and no error) are omitted from the human-readable
+// formats; the summary always reflects every repo scanned.
+func Commits(w io.Writer, format string, reports []CommitReport) error {
 	switch format {
 	case "json":
-		return commitsJSON(w, report)
+		return commitsJSON(w, reports)
 	case "markdown":
-		commitsMarkdown(w, report)
+		commitsText(w, reports, true)
 	case "table":
-		commitsTable(w, report)
+		commitsText(w, reports, false)
 	default:
 		return fmt.Errorf("render: invalid format %q, must be one of %s", format, strings.Join(CommitFormats, ", "))
 	}
@@ -92,32 +100,57 @@ type commitRowJSON struct {
 	Message   string `json:"message"`
 }
 
-// commitReportJSON is the JSON envelope for a commit report.
-type commitReportJSON struct {
+// commitRepoJSON is one repository's entry in the JSON envelope.
+type commitRepoJSON struct {
 	Repo    string          `json:"repo"`
 	Mode    string          `json:"mode"` // see CommitReport.Mode
 	Ref     string          `json:"ref"`  // baseline ref or hash; may be empty
 	Count   int             `json:"count"`
 	Commits []commitRowJSON `json:"commits"`
+	Error   string          `json:"error,omitempty"`
 }
 
-func commitsJSON(w io.Writer, report CommitReport) error {
-	out := commitReportJSON{
-		Repo:    report.Repo,
-		Mode:    report.Mode,
-		Ref:     report.Ref,
-		Count:   len(report.Commits),
-		Commits: make([]commitRowJSON, 0, len(report.Commits)),
+// commitSummaryJSON aggregates a commit report across repositories.
+type commitSummaryJSON struct {
+	ReposScanned     int `json:"reposScanned"`
+	ReposWithCommits int `json:"reposWithCommits"`
+	CommitsTotal     int `json:"commitsTotal"`
+}
+
+// commitEnvelopeJSON is the (always list-shaped) JSON envelope.
+type commitEnvelopeJSON struct {
+	Repos   []commitRepoJSON  `json:"repos"`
+	Summary commitSummaryJSON `json:"summary"`
+}
+
+func commitsJSON(w io.Writer, reports []CommitReport) error {
+	out := commitEnvelopeJSON{
+		Repos:   make([]commitRepoJSON, 0, len(reports)),
+		Summary: summarize(reports),
 	}
-	for _, c := range report.Commits {
-		out.Commits = append(out.Commits, commitRowJSON{
-			Hash:      c.Hash,
-			Weekday:   weekday(c.CommitDate),
-			Date:      c.CommitDate.Format("2006-01-02"),
-			Time:      c.CommitDate.Format("15:04:05"),
-			Timestamp: rfc3339(c.CommitDate),
-			Message:   c.Subject,
-		})
+	for _, report := range reports {
+		if !showRepo(report, len(reports)) {
+			continue
+		}
+		repo := commitRepoJSON{
+			Repo:    report.Repo,
+			Mode:    report.Mode,
+			Ref:     report.Ref,
+			Count:   len(report.Commits),
+			Commits: make([]commitRowJSON, 0, len(report.Commits)),
+			Error:   report.Err,
+		}
+		for _, c := range report.Commits {
+			repo.Commits = append(repo.Commits, commitRowJSON{
+				Hash:      c.Hash,
+				Weekday:   weekday(c.CommitDate),
+				Date:      c.CommitDate.Format("2006-01-02"),
+				Time:      c.CommitDate.Format("15:04:05"),
+				Timestamp: rfc3339(c.CommitDate),
+				Message:   c.Subject,
+			})
+		}
+		out.Repos = append(out.Repos, repo)
 	}
 
 	enc := json.NewEncoder(w)
@@ -125,10 +158,32 @@ func commitsJSON(w io.Writer, report CommitReport) error {
 	return enc.Encode(out)
 }
 
-// commitHeader writes the report summary line shared by every non-JSON
-// format.
+// showRepo reports whether a repo appears in the human-readable output: it is
+// shown when it has commits or an error, or when it is the only repo scanned
+// (so an explicit single-repo query always prints something).
+func showRepo(report CommitReport, total int) bool {
+	return report.Err != "" || len(report.Commits) > 0 || total == 1
+}
+
+// summarize aggregates counts across every scanned repository.
+func summarize(reports []CommitReport) commitSummaryJSON {
+	s := commitSummaryJSON{ReposScanned: len(reports)}
+	for _, report := range reports {
+		if len(report.Commits) > 0 {
+			s.ReposWithCommits++
+			s.CommitsTotal += len(report.Commits)
+		}
+	}
+	return s
+}
+
+// commitHeader writes one repo's header lines.
 func commitHeader(w io.Writer, report CommitReport) {
 	fmt.Fprintf(w, "Repo: %s\n", report.Repo)
+	if report.Err != "" {
+		fmt.Fprintf(w, "  error: %s\n\n", report.Err)
+		return
+	}
 	switch report.Mode {
 	case "since-commit":
 		fmt.Fprintf(w, "Commits after %s: %d\n\n", report.Ref, len(report.Commits))
@@ -145,17 +200,55 @@ func commitHeader(w io.Writer, report CommitReport) {
 	}
 }
 
-// commitsTable renders an aligned plain-text table via text/tabwriter,
-// meant to be read directly in a terminal.
-func commitsTable(w io.Writer, report CommitReport) {
-	commitHeader(w, report)
-	if len(report.Commits) == 0 {
+// commitsText renders every shown repository followed by a summary. When
+// markdown is true each commit list is a GitHub-flavored table; otherwise
+// it is an aligned text/tabwriter table for terminal reading.
+func commitsText(w io.Writer, reports []CommitReport, markdown bool) {
+	if len(reports) == 0 {
+		fmt.Fprintln(w, "No repositories found.")
 		return
 	}
 
+	for _, report := range reports {
+		if !showRepo(report, len(reports)) {
+			continue
+		}
+		commitHeader(w, report)
+		if len(report.Commits) == 0 {
+			continue
+		}
+		if markdown {
+			commitRowsMarkdown(w, report.Commits)
+		} else {
+			commitRowsTable(w, report.Commits)
+		}
+		fmt.Fprintln(w)
+	}
+
+	// The per-repo header already conveys the count for a single repo; only
+	// summarize when a fleet was scanned.
+	if len(reports) > 1 {
+		s := summarize(reports)
+		fmt.Fprintf(w, "Summary: %d repos scanned, %d with %s commits, %d commits total\n",
+			s.ReposScanned, s.ReposWithCommits, summaryNoun(reports), s.CommitsTotal)
+	}
+}
+
+// summaryNoun labels the summary's per-repo count based on what was reported.
+func summaryNoun(reports []CommitReport) string {
+	for _, report := range reports {
+		if report.Mode == "pushed" {
+			return "pushed"
+		}
+	}
+	return "unpushed"
+}
+
+// commitRowsTable renders commits as an aligned text/tabwriter table.
+func commitRowsTable(w io.Writer, commits []gogit.Commit) {
 	tw := tabwriter.NewWriter(w, 0, 2, 2, ' ', 0)
 	fmt.Fprintln(tw, "#\tHASH\tDAY\tTIMESTAMP\tMESSAGE")
-	for i, c := range report.Commits {
+	for i, c := range commits {
 		fmt.Fprintf(tw, "%d\t%s\t%s\t%s\t%s\n",
 			i+1, shortHash(c.Hash), weekday(c.CommitDate), rfc3339(c.CommitDate),
 			sanitizeTabwriterCell(c.Subject))
@@ -163,17 +256,12 @@ func commitsTable(w io.Writer, report CommitReport) {
 	tw.Flush()
 }
 
-// commitsMarkdown renders a copy-pasteable GitHub-flavored markdown table
-// (e.g. for pasting into a PR description or issue).
-func commitsMarkdown(w io.Writer, report CommitReport) {
-	commitHeader(w, report)
-	if len(report.Commits) == 0 {
-		return
-	}
-
+// commitRowsMarkdown renders commits as a copy-pasteable GitHub-flavored
+// markdown table (e.g. for pasting into a PR description or issue).
+func commitRowsMarkdown(w io.Writer, commits []gogit.Commit) {
 	fmt.Fprintln(w, "| # | Hash | Day | Timestamp | Message |")
 	fmt.Fprintln(w, "|---|------|-----|-----------|---------|")
-	for i, c := range report.Commits {
+	for i, c := range commits {
 		fmt.Fprintf(w, "| %d | %s | %s | %s | %s |\n",
 			i+1, shortHash(c.Hash), weekday(c.CommitDate), rfc3339(c.CommitDate),
 			escapeMarkdownCell(c.Subject))

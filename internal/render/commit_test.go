@@ -31,9 +31,11 @@ func testReport() CommitReport {
 	}
 }
 
+func one(report CommitReport) []CommitReport { return []CommitReport{report} }
+
 func TestPendingInvalidFormat(t *testing.T) {
 	var buf bytes.Buffer
-	err := Commits(&buf, "bogus", testReport())
+	err := Commits(&buf, "bogus", one(testReport()))
 	if err == nil {
 		t.Fatal("expected an error for an invalid format")
 	}
@@ -41,7 +43,7 @@ func TestPendingInvalidFormat(t *testing.T) {
 
 func TestPendingTable(t *testing.T) {
 	var buf bytes.Buffer
-	if err := Commits(&buf, "table", testReport()); err != nil {
+	if err := Commits(&buf, "table", one(testReport())); err != nil {
 		t.Fatal(err)
 	}
 	out := buf.String()
@@ -66,23 +68,32 @@ func TestPendingTable(t *testing.T) {
 	if !strings.Contains(out, "feat: add a | pipe") {
 		t.Errorf("expected unescaped pipe in table output: %s", out)
 	}
+	// A single-repo report carries no fleet summary line.
+	if strings.Contains(out, "Summary:") {
+		t.Errorf("single-repo output should not include a summary line: %s", out)
+	}
 }
 
 func TestPendingTableEmpty(t *testing.T) {
 	var buf bytes.Buffer
 	report := testReport()
 	report.Commits = nil
-	if err := Commits(&buf, "table", report); err != nil {
+	if err := Commits(&buf, "table", one(report)); err != nil {
 		t.Fatal(err)
 	}
-	if strings.Contains(buf.String(), "HASH") {
-		t.Errorf("expected no table header for zero commits: %s", buf.String())
+	out := buf.String()
+	if strings.Contains(out, "HASH") {
+		t.Errorf("expected no table header for zero commits: %s", out)
+	}
+	// The single repo still gets a header showing the zero count.
+	if !strings.Contains(out, "Repo: /repo") {
+		t.Errorf("expected the single repo header even with no commits: %s", out)
 	}
 }
 
 func TestPendingMarkdownEscapesPipe(t *testing.T) {
 	var buf bytes.Buffer
-	if err := Commits(&buf, "markdown", testReport()); err != nil {
+	if err := Commits(&buf, "markdown", one(testReport())); err != nil {
 		t.Fatal(err)
 	}
 	out := buf.String()
@@ -98,17 +109,14 @@ func TestPendingMarkdownEscapesPipe(t *testing.T) {
 	}
 }
 
-func TestPendingJSON(t *testing.T) {
-	var buf bytes.Buffer
-	if err := Commits(&buf, "json", testReport()); err != nil {
-		t.Fatal(err)
-	}
-
-	var decoded struct {
+// commitEnvelope mirrors the JSON envelope for decoding in tests.
+type commitEnvelope struct {
+	Repos []struct {
 		Repo    string `json:"repo"`
 		Mode    string `json:"mode"`
 		Ref     string `json:"ref"`
 		Count   int    `json:"count"`
+		Error   string `json:"error"`
 		Commits []struct {
 			Hash      string `json:"hash"`
 			Weekday   string `json:"weekday"`
@@ -117,18 +125,41 @@ func TestPendingJSON(t *testing.T) {
 			Timestamp string `json:"timestamp"`
 			Message   string `json:"message"`
 		} `json:"commits"`
+	} `json:"repos"`
+	Summary struct {
+		ReposScanned     int `json:"reposScanned"`
+		ReposWithCommits int `json:"reposWithCommits"`
+		CommitsTotal     int `json:"commitsTotal"`
+	} `json:"summary"`
+}
+
+func TestPendingJSON(t *testing.T) {
+	var buf bytes.Buffer
+	if err := Commits(&buf, "json", one(testReport())); err != nil {
+		t.Fatal(err)
 	}
+
+	var decoded commitEnvelope
 	if err := json.Unmarshal(buf.Bytes(), &decoded); err != nil {
 		t.Fatalf("output is not valid JSON: %v\n%s", err, buf.String())
 	}
 
-	if decoded.Repo != "/repo" || decoded.Mode != "unpushed" || decoded.Ref != "@{upstream}" {
-		t.Errorf("unexpected envelope: %+v", decoded)
+	// Even a single repo is reported as an array of one.
+	if len(decoded.Repos) != 1 {
+		t.Fatalf("expected 1 repo in the envelope, got %d", len(decoded.Repos))
 	}
-	if decoded.Count != 2 || len(decoded.Commits) != 2 {
-		t.Fatalf("expected 2 commits, got count=%d len=%d", decoded.Count, len(decoded.Commits))
+	repo := decoded.Repos[0]
+	if repo.Repo != "/repo" || repo.Mode != "unpushed" || repo.Ref != "@{upstream}" {
+		t.Errorf("unexpected repo entry: %+v", repo)
 	}
-	first := decoded.Commits[0]
+	if repo.Count != 2 || len(repo.Commits) != 2 {
+		t.Fatalf("expected 2 commits, got count=%d len=%d", repo.Count, len(repo.Commits))
+	}
+	if decoded.Summary.ReposScanned != 1 || decoded.Summary.ReposWithCommits != 1 || decoded.Summary.CommitsTotal != 2 {
+		t.Errorf("unexpected summary: %+v", decoded.Summary)
+	}
+
+	first := repo.Commits[0]
 	if first.Hash != "1234567890abcdef1234567890abcdef12345678" {
 		t.Errorf("JSON format should carry the full hash, got %q", first.Hash)
 	}
@@ -213,7 +244,7 @@ func TestPendingSinceCommitMode(t *testing.T) {
 	report := testReport()
 	report.Mode = "since-commit"
 	report.Ref = "abc1234"
-	if err := Commits(&buf, "table", report); err != nil {
+	if err := Commits(&buf, "table", one(report)); err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(buf.String(), "Commits after abc1234: 2") {
@@ -226,7 +257,7 @@ func TestCommitsPushedMode(t *testing.T) {
 	report := testReport()
 	report.Mode = "pushed"
 	report.Ref = "origin/main"
-	if err := Commits(&buf, "table", report); err != nil {
+	if err := Commits(&buf, "table", one(report)); err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(buf.String(), "Pushed commits (most recent first, from origin/main): 2") {
@@ -240,7 +271,7 @@ func TestCommitsPushedModeNoTarget(t *testing.T) {
 	report.Mode = "pushed"
 	report.Ref = ""
 	report.Commits = nil
-	if err := Commits(&buf, "table", report); err != nil {
+	if err := Commits(&buf, "table", one(report)); err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(buf.String(), "branch has no upstream or remote-tracking branch") {
@@ -253,7 +284,7 @@ func TestPendingUnpushedAllMode(t *testing.T) {
 	report := testReport()
 	report.Mode = "unpushed-all"
 	report.Ref = "" // no baseline
-	if err := Commits(&buf, "table", report); err != nil {
+	if err := Commits(&buf, "table", one(report)); err != nil {
 		t.Fatal(err)
 	}
 	out := buf.String()
@@ -263,5 +294,79 @@ func TestPendingUnpushedAllMode(t *testing.T) {
 	// The empty baseline must not leak into the header as a stray "to :".
 	if strings.Contains(out, "not yet pushed to") {
 		t.Errorf("unpushed-all should not render a baseline ref: %s", out)
+	}
+}
+
+// fleetReports builds three repos: two with commits, one clean.
+func fleetReports() []CommitReport {
+	loc := time.FixedZone("", -7*3600)
+	commit := func(subj string) gogit.Commit {
+		return gogit.Commit{Hash: "aaaaaaa0000000000000000000000000000000", CommitDate: time.Date(2026, 9, 7, 9, 0, 0, 0, loc), Subject: subj}
+	}
+	return []CommitReport{
+		{Repo: "/a", Mode: "unpushed", Ref: "@{upstream}", Commits: []gogit.Commit{commit("feat: a1"), commit("feat: a2")}},
+		{Repo: "/b", Mode: "unpushed", Ref: "@{upstream}"}, // clean
+		{Repo: "/c", Mode: "unpushed-all", Ref: "", Commits: []gogit.Commit{commit("feat: c1")}},
+	}
+}
+
+func TestCommitsFleetHidesCleanAndSummarizes(t *testing.T) {
+	var buf bytes.Buffer
+	if err := Commits(&buf, "table", fleetReports()); err != nil {
+		t.Fatal(err)
+	}
+	out := buf.String()
+
+	if !strings.Contains(out, "Repo: /a") || !strings.Contains(out, "Repo: /c") {
+		t.Errorf("expected repos with commits shown: %s", out)
+	}
+	if strings.Contains(out, "Repo: /b") {
+		t.Errorf("a clean repo should be hidden in a fleet sweep: %s", out)
+	}
+	if !strings.Contains(out, "Summary: 3 repos scanned, 2 with unpushed commits, 3 commits total") {
+		t.Errorf("unexpected summary: %s", out)
+	}
+}
+
+func TestCommitsFleetJSONShape(t *testing.T) {
+	var buf bytes.Buffer
+	if err := Commits(&buf, "json", fleetReports()); err != nil {
+		t.Fatal(err)
+	}
+	var decoded commitEnvelope
+	if err := json.Unmarshal(buf.Bytes(), &decoded); err != nil {
+		t.Fatalf("invalid JSON: %v\n%s", err, buf.String())
+	}
+	// Only the two repos with commits appear; the summary counts all three.
+	if len(decoded.Repos) != 2 {
+		t.Fatalf("expected 2 repos with commits in the array, got %d", len(decoded.Repos))
+	}
+	if decoded.Summary.ReposScanned != 3 || decoded.Summary.ReposWithCommits != 2 || decoded.Summary.CommitsTotal != 3 {
+		t.Errorf("unexpected summary: %+v", decoded.Summary)
+	}
+}
+
+func TestCommitsErrorReported(t *testing.T) {
+	var buf bytes.Buffer
+	reports := []CommitReport{
+		{Repo: "/broken", Err: "gogit: git rev-parse failed"},
+		{Repo: "/ok", Mode: "unpushed", Ref: "@{upstream}"},
+	}
+	if err := Commits(&buf, "table", reports); err != nil {
+		t.Fatal(err)
+	}
+	out := buf.String()
+	if !strings.Contains(out, "Repo: /broken") || !strings.Contains(out, "error: gogit: git rev-parse failed") {
+		t.Errorf("expected the errored repo surfaced: %s", out)
+	}
+}
+
+func TestCommitsNoRepos(t *testing.T) {
+	var buf bytes.Buffer
+	if err := Commits(&buf, "table", nil); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(buf.String(), "No repositories found.") {
+		t.Errorf("expected a no-repositories message, got: %s", buf.String())
 	}
 }
