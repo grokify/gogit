@@ -48,9 +48,16 @@ func ApplyTimezone(commits []gogit.Commit, tz string) ([]gogit.Commit, error) {
 
 // PendingReport describes a set of commits pending push, for rendering.
 type PendingReport struct {
-	Repo    string
-	Mode    string // "unpushed" or "since-commit"
-	Ref     string // "@{upstream}" or an explicit commit hash
+	Repo string
+	// Mode is one of:
+	//   "unpushed"     - commits ahead of Ref (the push baseline)
+	//   "unpushed-all" - no push baseline; every local commit is pending
+	//   "since-commit" - commits after the explicit Ref hash
+	Mode string
+	// Ref is the baseline the commits are measured against: an upstream or
+	// remote-tracking ref, or an explicit commit hash. Empty when Mode is
+	// "unpushed-all".
+	Ref     string
 	Commits []gogit.Commit
 }
 
@@ -85,8 +92,8 @@ type pendingCommitJSON struct {
 // pendingReportJSON is the JSON envelope for the pending-commits report.
 type pendingReportJSON struct {
 	Repo    string              `json:"repo"`
-	Mode    string              `json:"mode"` // "unpushed" or "since-commit"
-	Ref     string              `json:"ref"`  // "@{upstream}" or the given hash
+	Mode    string              `json:"mode"` // "unpushed", "unpushed-all", or "since-commit"
+	Ref     string              `json:"ref"`  // baseline ref or hash; empty for "unpushed-all"
 	Count   int                 `json:"count"`
 	Commits []pendingCommitJSON `json:"commits"`
 }
@@ -119,10 +126,13 @@ func pendingJSON(w io.Writer, report PendingReport) error {
 // format.
 func pendingHeader(w io.Writer, report PendingReport) {
 	fmt.Fprintf(w, "Repo: %s\n", report.Repo)
-	if report.Mode == "unpushed" {
-		fmt.Fprintf(w, "Pending commits (not yet pushed to %s): %d\n\n", report.Ref, len(report.Commits))
-	} else {
+	switch report.Mode {
+	case "since-commit":
 		fmt.Fprintf(w, "Commits after %s: %d\n\n", report.Ref, len(report.Commits))
+	case "unpushed-all":
+		fmt.Fprintf(w, "Pending commits (no upstream configured; all local commits unpushed): %d\n\n", len(report.Commits))
+	default: // "unpushed"
+		fmt.Fprintf(w, "Pending commits (not yet pushed to %s): %d\n\n", report.Ref, len(report.Commits))
 	}
 }
 

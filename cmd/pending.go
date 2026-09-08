@@ -53,12 +53,7 @@ func init() {
 }
 
 func runPending(cmd *cobra.Command, args []string) error {
-	dir := "."
-	if len(args) > 0 {
-		dir = args[0]
-	}
-
-	absPath, err := cliutil.ResolvePath(dir)
+	absPath, err := cliutil.ResolvePath(dirArg(args, 0))
 	if err != nil {
 		return err
 	}
@@ -68,25 +63,29 @@ func runPending(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	commits, err := repo.PendingCommits(context.Background(), pendingSinceCommit)
+	res, err := repo.PendingCommits(context.Background(), pendingSinceCommit)
 	if err != nil {
 		return err
 	}
 
-	commits, err = render.ApplyTimezone(commits, pendingTZ)
+	commits, err := render.ApplyTimezone(res.Commits, pendingTZ)
 	if err != nil {
 		return err
 	}
 
-	mode, ref := "unpushed", "@{upstream}"
-	if pendingSinceCommit != "" {
-		mode, ref = "since-commit", pendingSinceCommit
+	mode := "unpushed"
+	switch {
+	case pendingSinceCommit != "":
+		mode = "since-commit"
+	case res.Baseline == "":
+		// No upstream or remote-tracking branch: every local commit is pending.
+		mode = "unpushed-all"
 	}
 
 	return render.Pending(os.Stdout, pendingFormat, render.PendingReport{
 		Repo:    absPath,
 		Mode:    mode,
-		Ref:     ref,
+		Ref:     res.Baseline,
 		Commits: commits,
 	})
 }

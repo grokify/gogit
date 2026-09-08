@@ -220,3 +220,21 @@ func TestPendingSinceCommitMode(t *testing.T) {
 		t.Errorf("expected since-commit header, got: %s", buf.String())
 	}
 }
+
+func TestPendingUnpushedAllMode(t *testing.T) {
+	var buf bytes.Buffer
+	report := testReport()
+	report.Mode = "unpushed-all"
+	report.Ref = "" // no baseline
+	if err := Pending(&buf, "table", report); err != nil {
+		t.Fatal(err)
+	}
+	out := buf.String()
+	if !strings.Contains(out, "no upstream configured; all local commits unpushed): 2") {
+		t.Errorf("expected no-upstream header, got: %s", out)
+	}
+	// The empty baseline must not leak into the header as a stray "to :".
+	if strings.Contains(out, "not yet pushed to") {
+		t.Errorf("unpushed-all should not render a baseline ref: %s", out)
+	}
+}

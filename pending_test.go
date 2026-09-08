@@ -80,29 +80,96 @@ func TestPendingCommitsUpstream(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	commits, err := r.PendingCommits(context.Background(), "")
+	res, err := r.PendingCommits(context.Background(), "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(commits) != 2 {
-		t.Fatalf("expected 2 pending commits, got %d", len(commits))
+	if len(res.Commits) != 2 {
+		t.Fatalf("expected 2 pending commits, got %d", len(res.Commits))
+	}
+	if res.Baseline != "@{upstream}" {
+		t.Errorf("expected baseline @{upstream}, got %q", res.Baseline)
 	}
 	// Oldest first.
-	if commits[0].Subject != "feat: add b" || commits[1].Subject != "feat: add c" {
-		t.Errorf("unexpected order: %q, %q", commits[0].Subject, commits[1].Subject)
+	if res.Commits[0].Subject != "feat: add b" || res.Commits[1].Subject != "feat: add c" {
+		t.Errorf("unexpected order: %q, %q", res.Commits[0].Subject, res.Commits[1].Subject)
 	}
 }
 
-func TestPendingCommitsNoUpstreamRequiresHash(t *testing.T) {
+// A branch with no upstream and no remote-tracking ref has never been
+// pushed, so every commit is pending and Baseline is empty — no error.
+func TestPendingCommitsNoUpstreamListsAll(t *testing.T) {
 	dir := t.TempDir()
 	initRepo(t, dir)
 	commitFile(t, dir, "a.txt", "hello\n", "chore: init")
+	commitFile(t, dir, "b.txt", "world\n", "feat: add b")
 	r, err := Open(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := r.PendingCommits(context.Background(), ""); err == nil {
-		t.Fatal("expected error when no upstream and no sinceCommit given")
+	res, err := r.PendingCommits(context.Background(), "")
+	if err != nil {
+		t.Fatalf("expected no error for a branch with no upstream, got %v", err)
+	}
+	if len(res.Commits) != 2 {
+		t.Fatalf("expected all 2 commits reported as pending, got %d", len(res.Commits))
+	}
+	if res.Baseline != "" {
+		t.Errorf("expected empty baseline when there is no push target, got %q", res.Baseline)
+	}
+	if res.Commits[0].Subject != "chore: init" || res.Commits[1].Subject != "feat: add b" {
+		t.Errorf("unexpected order: %q, %q", res.Commits[0].Subject, res.Commits[1].Subject)
+	}
+}
+
+// A branch pushed without -u has a remote-tracking ref (origin/main) but no
+// configured upstream; PendingCommits should fall back to that ref.
+func TestPendingCommitsRemoteTrackingBaseline(t *testing.T) {
+	dir, _ := pushableRepo(t)
+	// Drop the upstream configuration but keep the origin/main tracking ref.
+	run(t, dir, "branch", "--unset-upstream")
+	commitFile(t, dir, "b.txt", "one\n", "feat: add b")
+
+	r, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	has, err := r.HasUpstream(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if has {
+		t.Fatal("precondition: expected no upstream after --unset-upstream")
+	}
+
+	res, err := r.PendingCommits(context.Background(), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Commits) != 1 {
+		t.Fatalf("expected 1 pending commit measured against origin/main, got %d", len(res.Commits))
+	}
+	if res.Baseline != "origin/main" {
+		t.Errorf("expected baseline origin/main, got %q", res.Baseline)
+	}
+	if res.Commits[0].Subject != "feat: add b" {
+		t.Errorf("unexpected commit: %q", res.Commits[0].Subject)
+	}
+}
+
+func TestPendingCommitsEmptyRepo(t *testing.T) {
+	dir := t.TempDir()
+	initRepo(t, dir)
+	r, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := r.PendingCommits(context.Background(), "")
+	if err != nil {
+		t.Fatalf("expected no error for an empty repo, got %v", err)
+	}
+	if len(res.Commits) != 0 {
+		t.Errorf("expected no commits in an empty repo, got %d", len(res.Commits))
 	}
 }
 
@@ -115,14 +182,17 @@ func TestPendingCommitsSinceHash(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	commits, err := r.PendingCommits(context.Background(), firstHash)
+	res, err := r.PendingCommits(context.Background(), firstHash)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(commits) != 2 {
-		t.Fatalf("expected 2 commits after %s, got %d", firstHash, len(commits))
+	if len(res.Commits) != 2 {
+		t.Fatalf("expected 2 commits after %s, got %d", firstHash, len(res.Commits))
 	}
-	if commits[0].Subject != "feat: add b" || commits[1].Subject != "feat: add c" {
-		t.Errorf("unexpected order: %q, %q", commits[0].Subject, commits[1].Subject)
+	if res.Baseline != firstHash {
+		t.Errorf("expected baseline %s, got %q", firstHash, res.Baseline)
+	}
+	if res.Commits[0].Subject != "feat: add b" || res.Commits[1].Subject != "feat: add c" {
+		t.Errorf("unexpected order: %q, %q", res.Commits[0].Subject, res.Commits[1].Subject)
 	}
 }

@@ -3,6 +3,7 @@ package cmd
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -32,16 +33,22 @@ func pushableRepo(t *testing.T) string {
 	return work
 }
 
-func TestRunPendingNoUpstreamRequiresHash(t *testing.T) {
+func TestRunPendingNoUpstreamListsAll(t *testing.T) {
 	resetFlags(t)
 	root := t.TempDir()
-	repo := fixtureRepo(t, root, "repo", "")
+	repo := fixtureRepo(t, root, "repo", "") // one commit, no remote/upstream
 
-	captureStdout(t, func() {
-		if err := runPending(nil, []string{repo}); err == nil {
-			t.Fatal("expected an error when there's no upstream and no --since-commit")
+	out := captureStdout(t, func() {
+		if err := runPending(nil, []string{repo}); err != nil {
+			t.Fatalf("expected no error for a repo with no upstream, got %v", err)
 		}
 	})
+	if !strings.Contains(out, "no upstream configured; all local commits unpushed") {
+		t.Errorf("expected the no-upstream header, got: %s", out)
+	}
+	if !strings.Contains(out, "chore: init") {
+		t.Errorf("expected the local commit listed as pending: %s", out)
+	}
 }
 
 func TestRunPendingInvalidFormat(t *testing.T) {
@@ -87,11 +94,19 @@ func TestRunPendingUTCTimezone(t *testing.T) {
 			t.Fatal(err)
 		}
 	})
-	if !strings.Contains(out, "Z") {
-		t.Errorf("expected a UTC (Z-suffixed) timestamp in output: %s", out)
+
+	// Inspect the actual RFC3339 timestamps rather than scanning the whole
+	// output for stray characters: a "+" or "Z" can legitimately appear in a
+	// temp-dir path or commit message. Every rendered timestamp must carry a
+	// "Z" offset (exact UTC), never a numeric "+HH:MM"/"-HH:MM" one.
+	timestamps := regexp.MustCompile(`\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(Z|[+-]\d{2}:\d{2})`).FindAllString(out, -1)
+	if len(timestamps) == 0 {
+		t.Fatalf("expected at least one RFC3339 timestamp in output: %s", out)
 	}
-	if strings.ContainsAny(out, "+") {
-		t.Errorf("did not expect a numeric offset with --tz utc: %s", out)
+	for _, ts := range timestamps {
+		if !strings.HasSuffix(ts, "Z") {
+			t.Errorf("--tz utc should render Z-suffixed timestamps, got %q in: %s", ts, out)
+		}
 	}
 }
 
