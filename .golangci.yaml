@@ -3,6 +3,7 @@ linters:
   enable:
     - dogsled
     - dupl
+    - errcheck
     - gosec
     - misspell
     - nakedret
