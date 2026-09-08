@@ -194,3 +194,25 @@ func TestCLIGitBackendGetStatusError(t *testing.T) {
 		t.Fatal("expected an error for a non-git directory, got nil")
 	}
 }
+
+func TestRepoResultHasIssues(t *testing.T) {
+	tests := []struct {
+		name string
+		r    RepoResult
+		want bool
+	}{
+		{"clean", RepoResult{}, false},
+		{"uncommitted", RepoResult{HasUncommittedChanges: true}, true},
+		{"replace directives", RepoResult{HasReplaceDirectives: true}, true},
+		{"module mismatch", RepoResult{HasModuleMismatch: true}, true},
+		{"status error", RepoResult{StatusError: "git status failed"}, true},
+		{"unpushed alone does not count as an issue", RepoResult{HasUnpushedCommits: true}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.r.HasIssues(); got != tt.want {
+				t.Errorf("HasIssues() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

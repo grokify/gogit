@@ -90,6 +90,13 @@ func (r RepoResult) NeedsPush() bool {
 	return r.HasUncommittedChanges || r.HasUnpushedCommits || r.StatusError != ""
 }
 
+// HasIssues reports whether the repo has any of the issues gitscan's root
+// command flags: uncommitted changes, replace directives, a module name
+// mismatch, or a failed git status check.
+func (r RepoResult) HasIssues() bool {
+	return r.HasUncommittedChanges || r.HasReplaceDirectives || r.HasModuleMismatch || r.StatusError != ""
+}
+
 // ProgressFunc is called during scanning with current progress.
 type ProgressFunc func(current, total int, name string)
 
