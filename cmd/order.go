@@ -3,9 +3,10 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
+	"github.com/grokify/gogit/internal/cliutil"
+	"github.com/grokify/gogit/internal/render"
 	"github.com/grokify/gogit/scanner"
 	"github.com/grokify/mogo/fmt/progress"
 	"github.com/spf13/cobra"
@@ -41,44 +42,36 @@ func init() {
 }
 
 func runOrder(cmd *cobra.Command, args []string) error {
-	// Handle positional argument
 	if len(args) > 0 && dirPath == "" {
 		dirPath = args[0]
 	}
-
 	if dirPath == "" {
 		return fmt.Errorf("directory path required\nUsage: gitscan order [directory] or gitscan order -d <directory>")
 	}
 
-	// Parse since duration
 	var sinceDuration time.Duration
 	if orderSinceStr != "" {
 		var err error
-		sinceDuration, err = parseDuration(orderSinceStr)
+		sinceDuration, err = scanner.ParseDuration(orderSinceStr)
 		if err != nil {
 			return fmt.Errorf("invalid duration %q: %v\nValid formats: 7d (days), 2w (weeks), 1m (months), 24h (hours)", orderSinceStr, err)
 		}
 	}
 
-	// Resolve path
-	absPath, err := resolvePath(dirPath)
+	absPath, err := cliutil.ResolvePath(dirPath)
 	if err != nil {
 		return err
 	}
 
 	fmt.Printf("Scanning: %s\n", absPath)
 
-	// Count directories first
 	total, err := scanner.CountDirectories(absPath)
 	if err != nil {
 		return fmt.Errorf("error counting directories: %w", err)
 	}
 	fmt.Printf("Found %d directories to scan\n\n", total)
 
-	// Progress renderer
 	renderer := progress.NewSingleStageRenderer(os.Stdout).WithBarWidth(progressBarWidth)
-
-	// Progress callback
 	progressFn := func(current, total int, name string) {
 		renderer.Update(current, total, name)
 	}
@@ -93,8 +86,6 @@ func runOrder(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("error scanning directory: %w", err)
 	}
-
-	// Clear the progress line and show completion
 	renderer.Done("Scan complete!")
 
 	// Filter by modification time if specified
@@ -108,7 +99,6 @@ func runOrder(cmd *cobra.Command, args []string) error {
 		}
 
 		if includeTransitive && len(filtered) > 0 {
-			// Expand to include transitive dependents
 			results = scanner.GetTransitiveDependents(filtered, allResults)
 			fmt.Printf("Found %d repos modified within %s, expanded to %d with transitive dependents\n",
 				len(filtered), orderSinceStr, len(results))
@@ -118,9 +108,7 @@ func runOrder(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Topological sort
 	sorted, cycles := scanner.TopologicalSort(results)
-
 	if len(cycles) > 0 {
 		fmt.Println("\nWarning: Circular dependencies detected:")
 		for _, mod := range cycles {
@@ -129,7 +117,6 @@ func runOrder(cmd *cobra.Command, args []string) error {
 		fmt.Println()
 	}
 
-	// Filter to only unpushed repos if requested
 	if unpushedOnly {
 		var unpushed []scanner.RepoResult
 		for _, r := range sorted {
@@ -141,33 +128,6 @@ func runOrder(cmd *cobra.Command, args []string) error {
 		sorted = unpushed
 	}
 
-	// Calculate max name length for alignment
-	maxNameLen := 0
-	for _, r := range sorted {
-		if len(r.Name) > maxNameLen {
-			maxNameLen = len(r.Name)
-		}
-	}
-
-	fmt.Println("\nUpdate order (dependencies first):")
-	fmt.Println("----------------------------------")
-
-	for i, r := range sorted {
-		internalDeps := scanner.GetInternalDeps(r, results)
-		depStr := ""
-		if len(internalDeps) > 0 {
-			depStr = fmt.Sprintf(" (depends on: %s)", strings.Join(internalDeps, ", "))
-		}
-
-		modTime := ""
-		if !r.LatestModTime.IsZero() {
-			modTime = r.LatestModTime.Format("2006-01-02 15:04")
-		}
-
-		fmt.Printf("%3d. %-*s  %s%s\n", i+1, maxNameLen, r.Name, modTime, depStr)
-	}
-
-	fmt.Printf("\nTotal: %d repos in dependency order\n", len(sorted))
-
+	render.Order(os.Stdout, sorted, results)
 	return nil
 }

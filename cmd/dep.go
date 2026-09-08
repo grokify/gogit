@@ -3,9 +3,9 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"sort"
-	"strings"
 
+	"github.com/grokify/gogit/internal/cliutil"
+	"github.com/grokify/gogit/internal/render"
 	"github.com/grokify/gogit/scanner"
 	"github.com/grokify/mogo/fmt/progress"
 	"github.com/spf13/cobra"
@@ -48,33 +48,27 @@ func init() {
 }
 
 func runDep(cmd *cobra.Command, args []string) error {
-	// Parse module path from first argument
 	depFilter := args[0]
 
-	// Get directory from second argument
 	if len(args) < 2 {
 		return fmt.Errorf("directory path required\nUsage: gitscan dep <module> [directory]")
 	}
 	scanDir := args[1]
 
-	// Resolve path
-	absPath, err := resolvePath(scanDir)
+	absPath, err := cliutil.ResolvePath(scanDir)
 	if err != nil {
 		return err
 	}
 
 	fmt.Printf("Scanning: %s\n", absPath)
 
-	// Count directories first
 	total, err := scanner.CountDirectories(absPath)
 	if err != nil {
 		return fmt.Errorf("error counting directories: %w", err)
 	}
 	fmt.Printf("Found %d directories to scan\n\n", total)
 
-	// Progress renderer
 	renderer := progress.NewSingleStageRenderer(os.Stdout).WithBarWidth(progressBarWidth)
-
 	progressFn := func(current, total int, name string) {
 		renderer.Update(current, total, name)
 	}
@@ -87,80 +81,13 @@ func runDep(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("error scanning directory: %w", err)
 	}
-
 	renderer.Done("Scan complete!")
 
-	// Sort results alphabetically
-	sort.Slice(results, func(i, j int) bool {
-		return results[i].Name < results[j].Name
+	render.Dep(os.Stdout, results, render.DepOptions{
+		ModulePath: depFilter,
+		DirectOnly: depDirectOnly,
+		Prefix:     depPrefix,
+		Recurse:    recurse,
 	})
-
-	// Calculate max name length for alignment
-	maxNameLen := 0
-	for _, r := range results {
-		if len(r.Name) > maxNameLen {
-			maxNameLen = len(r.Name)
-		}
-	}
-
-	// Filter and display
-	totalRepos := len(results)
-	depMatchCount := 0
-	rowNum := 0
-
-	for _, result := range results {
-		if !matchesDep(result, depFilter, depDirectOnly, depPrefix) {
-			continue
-		}
-		depMatchCount++
-		rowNum++
-
-		if recurse && len(result.GoModFiles) > 0 {
-			fmt.Printf("%3d. %-*s  [%s + %d nested]\n", rowNum, maxNameLen, result.Name, result.ModuleName, len(result.GoModFiles))
-		} else {
-			fmt.Printf("%3d. %-*s  [%s]\n", rowNum, maxNameLen, result.Name, result.ModuleName)
-		}
-	}
-
-	// Summary
-	fmt.Println()
-	fmt.Println("----------------------------------------")
-	fmt.Printf("Summary: %d repos scanned, %d depend on %s\n", totalRepos, depMatchCount, depFilter)
-
 	return nil
-}
-
-// matchesDep checks whether a repo depends on modulePath, honoring the
-// directOnly and prefix matching options.
-func matchesDep(result scanner.RepoResult, modulePath string, directOnly, prefix bool) bool {
-	deps := result.Dependencies
-	if directOnly {
-		deps = result.DirectDependencies
-	}
-	if depListMatches(deps, modulePath, prefix) {
-		return true
-	}
-	for _, gm := range result.GoModFiles {
-		nested := gm.Dependencies
-		if directOnly {
-			nested = gm.DirectDependencies
-		}
-		if depListMatches(nested, modulePath, prefix) {
-			return true
-		}
-	}
-	return false
-}
-
-func depListMatches(deps []string, modulePath string, prefix bool) bool {
-	for _, dep := range deps {
-		if prefix {
-			if dep == modulePath || strings.HasPrefix(dep, modulePath+"/") {
-				return true
-			}
-		} else if dep == modulePath {
-			return true
-		}
-	}
-	return false
 }
