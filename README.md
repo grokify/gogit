@@ -69,7 +69,7 @@ for _, c := range commits {
 | Metadata | `Repo.Branch`, `Repo.OriginURL` | Branch name and remote URL |
 | Remote normalization | `NormalizeRemoteURL(url)` | Canonical `host/path` identifiers |
 | Tags | `Repo.Tags`, `Repo.TagsWithDates` | Tag listing with creation dates |
-| Pending commits | `Repo.PendingCommits(ctx, sinceCommit)` | Commits ahead of upstream, or after an explicit commit hash |
+| Pending commits | `Repo.PendingCommits(ctx, sinceCommit)` | Commits ahead of upstream, or after an explicit commit hash; result carries the current branch |
 | Upstream check | `Repo.HasUpstream(ctx)` | Whether the current branch has an upstream configured |
 | File listing | `Repo.LsFiles(ctx, includeUntracked)` | Tracked files, optionally plus untracked/non-ignored files |
 | Staged files | `Repo.StagedFiles(ctx)` | Files with staged additions/modifications |

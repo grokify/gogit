@@ -41,6 +41,10 @@
         {
           "description": "`gitscan grep -e <pattern> [-e <pattern>...] [directory]`: search a repository's content or history, with `--staged`, `--rev`, `--history`, `--ignore-case`, `--regex`, `--path`, and `--json`",
           "commit": "0d5d7a4"
+        },
+        {
+          "description": "`Repo.PendingCommits` and `Repo.PushedCommits` now report the current branch (`PendingResult.Branch` / `PushedResult.Branch`); `gitscan pending`/`pushed` show it in the repo header (`Repo: <path> (branch: <name>)`) and JSON (`branch`), so \"no upstream configured\" on a feature branch is never misread as unpushed work on `main`",
+          "commit": "03dbdff"
         }
       ],
       "tests": [

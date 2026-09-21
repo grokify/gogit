@@ -38,8 +38,10 @@ integrations.
   the branch's push target (its upstream, or the matching remote-tracking
   branch such as `origin/main`), or after an explicit commit hash; a branch
   that was never pushed reports every commit as pending. `Repo.PushedCommits`
-  lists the most recent commits already pushed. `Repo.HasUpstream` reports
-  whether an upstream is configured.
+  lists the most recent commits already pushed. Both results carry the
+  current branch name (`Branch`), so a caller reporting "no upstream" also
+  knows which branch that refers to. `Repo.HasUpstream` reports whether an
+  upstream is configured.
 - **File & content access** — `Repo.LsFiles` (tracked and, optionally,
   untracked files), `Repo.StagedFiles` (staged additions/modifications),
   `Repo.ShowContent` (object content at a git spec, e.g. `:path` for the
