@@ -4,338 +4,952 @@
   "repository": "https://github.com/grokify/gogit",
   "versioning": "semver",
   "commitConvention": "conventional",
-  "maintainers": ["grokify"],
+  "maintainers": [
+    "grokify"
+  ],
   "releases": [
+    {
+      "version": "v0.11.0",
+      "date": "2026-09-21",
+      "highlights": [
+        {
+          "description": "New `gitgrep` package: search a repository's working tree, index, a revision, or history for one or more patterns by shelling out to native git (`git grep`, the pickaxe `-S`/`-G`, and streamed `git log -p` patches) — a policy-free primitive for building content/leak scanners on top of gogit",
+          "commit": "e6dca14"
+        },
+        {
+          "description": "New `gitscan grep` subcommand exposes `gitgrep` via the CLI: search the working tree, `--staged` index, a `--rev`, or `--history` (pickaxe), with `--ignore-case`, `--regex`, path limits, and `--json` output",
+          "commit": "0d5d7a4"
+        }
+      ],
+      "added": [
+        {
+          "description": "`gitgrep.GrepTree(ctx, repoPath, opts)`: search the working tree, the index (`Staged`), or a revision (`Rev`) for one or more patterns (fixed-string or `-E` regex, case-insensitive), returning matched line/path/text",
+          "commit": "e6dca14"
+        },
+        {
+          "description": "`gitgrep.HistoryPickaxe(ctx, repoPath, opts)`: find commits whose diff added or removed a pattern (`git log -S`/`-G`), attributed to the specific file",
+          "commit": "e6dca14"
+        },
+        {
+          "description": "`gitgrep.StreamPatches(ctx, repoPath, rng, fn)`: stream `git log -p` file diffs with commit/author/date context, for building custom detectors over a single git walk",
+          "commit": "e6dca14"
+        },
+        {
+          "description": "`Repo.LsFiles(ctx, includeUntracked)`, `Repo.StagedFiles(ctx)`, `Repo.ShowContent(ctx, spec)`, and `Repo.LsTree(ctx, rev)`: enumerate tracked/untracked files, staged changes, and a revision's tree, and read object content at a spec",
+          "commit": "8713673"
+        },
+        {
+          "description": "`gitscan grep -e <pattern> [-e <pattern>...] [directory]`: search a repository's content or history, with `--staged`, `--rev`, `--history`, `--ignore-case`, `--regex`, `--path`, and `--json`",
+          "commit": "0d5d7a4"
+        }
+      ],
+      "tests": [
+        {
+          "description": "Coverage for `gitgrep`: `GrepTree` working-tree matches, case-insensitive and regex patterns, no-match (non-error), `Staged`+`Rev` mutual exclusion, `StreamPatches` commit/file attribution, and `HistoryPickaxe` pattern attribution",
+          "commit": "e6dca14"
+        }
+      ],
+      "documentation": [
+        {
+          "description": "`docs/gitgrep-design.md`: design note covering motivation, non-goals, the API, git-command mapping, the `gitscan grep` CLI surface, and caveats (tracked-content-only, exhaustive-history cost, regex dialect, redaction)",
+          "commit": "2d34487"
+        }
+      ],
+      "dependencies": [
+        {
+          "description": "github.com/grokify/mogo bumped 0.74.8 → 0.74.9",
+          "commit": "53502a2"
+        }
+      ]
+    },
     {
       "version": "v0.10.0",
       "date": "2026-09-08",
       "highlights": [
-        { "description": "Fleet-wide `gitscan pending`: sweep unpushed commits across many repositories at once by passing one or more paths (e.g. one per GitHub org you manage), reported per repo with a summary of how many repos were scanned and have work waiting", "commit": "4cb1c1e" },
-        { "description": "New `gitscan pushed` subcommand and `Repo.PushedCommits` library API: the most recent commits already pushed on a branch — the counterpart to `pending` — so you can see recent activity on either side of what has reached the remote", "commit": "21882fb" },
-        { "description": "`gitscan pending` no longer errors on a branch with no upstream: a repo that was never pushed now reports every commit as pending, resolving the push baseline from the upstream or the matching remote-tracking branch (e.g. `origin/main`)", "commit": "85243b6" },
-        { "description": "Removed the `-d`/`--dir` flag: the scan directory is now a uniform optional positional argument across every subcommand, defaulting to the current directory", "commit": "542b9c6" }
+        {
+          "description": "Fleet-wide `gitscan pending`: sweep unpushed commits across many repositories at once by passing one or more paths (e.g. one per GitHub org you manage), reported per repo with a summary of how many repos were scanned and have work waiting",
+          "commit": "4cb1c1e"
+        },
+        {
+          "description": "New `gitscan pushed` subcommand and `Repo.PushedCommits` library API: the most recent commits already pushed on a branch — the counterpart to `pending` — so you can see recent activity on either side of what has reached the remote",
+          "commit": "21882fb"
+        },
+        {
+          "description": "`gitscan pending` no longer errors on a branch with no upstream: a repo that was never pushed now reports every commit as pending, resolving the push baseline from the upstream or the matching remote-tracking branch (e.g. `origin/main`)",
+          "commit": "85243b6"
+        },
+        {
+          "description": "Removed the `-d`/`--dir` flag: the scan directory is now a uniform optional positional argument across every subcommand, defaulting to the current directory",
+          "commit": "542b9c6"
+        }
       ],
       "breaking": [
-        { "description": "The `-d`/`--dir` flag is removed from `gitscan` and `gitscan order`; pass the directory as a positional argument instead (e.g. `gitscan ~/go/src`, `gitscan order ~/go/src`)", "commit": "542b9c6" },
-        { "description": "`gitscan pending` and `gitscan pushed` JSON output changed from a single `{repo,mode,ref,count,commits}` object to an invariant `{\"repos\":[{…}],\"summary\":{…}}` envelope, so consumers never branch on the number of repositories reported", "commit": "4cb1c1e" }
+        {
+          "description": "The `-d`/`--dir` flag is removed from `gitscan` and `gitscan order`; pass the directory as a positional argument instead (e.g. `gitscan ~/go/src`, `gitscan order ~/go/src`)",
+          "commit": "542b9c6"
+        },
+        {
+          "description": "`gitscan pending` and `gitscan pushed` JSON output changed from a single `{repo,mode,ref,count,commits}` object to an invariant `{\"repos\":[{…}],\"summary\":{…}}` envelope, so consumers never branch on the number of repositories reported",
+          "commit": "4cb1c1e"
+        }
       ],
       "added": [
-        { "description": "`gitscan pending [path...]`: accepts one or more repository or directory paths and reports every discovered repo (concurrently); repos with nothing pending are omitted from the table/markdown views and counted in the summary", "commit": "4cb1c1e" },
-        { "description": "`gitscan pending --depth`: how many directory levels below each path to search for repositories (default 1)", "commit": "4cb1c1e" },
-        { "description": "`gitscan pushed [count] [directory]`: list the most recent commits already pushed on the current branch, newest first; `count` defaults to 10 and is an optional positional (either order relative to the directory)", "commit": "21882fb" },
-        { "description": "`Repo.PushedCommits(ctx, limit)` and `PushedResult`: library API returning the most recent pushed commits and the baseline they were read from", "commit": "21882fb" },
-        { "description": "`LogOptions.Rev`: log commits reachable from an arbitrary revision (e.g. a push baseline) instead of the default HEAD", "commit": "21882fb" },
-        { "description": "`gitscan pending` shows a live progress bar on stderr while sweeping multiple repositories, keeping stdout clean for piping and JSON", "commit": "8432515" }
+        {
+          "description": "`gitscan pending [path...]`: accepts one or more repository or directory paths and reports every discovered repo (concurrently); repos with nothing pending are omitted from the table/markdown views and counted in the summary",
+          "commit": "4cb1c1e"
+        },
+        {
+          "description": "`gitscan pending --depth`: how many directory levels below each path to search for repositories (default 1)",
+          "commit": "4cb1c1e"
+        },
+        {
+          "description": "`gitscan pushed [count] [directory]`: list the most recent commits already pushed on the current branch, newest first; `count` defaults to 10 and is an optional positional (either order relative to the directory)",
+          "commit": "21882fb"
+        },
+        {
+          "description": "`Repo.PushedCommits(ctx, limit)` and `PushedResult`: library API returning the most recent pushed commits and the baseline they were read from",
+          "commit": "21882fb"
+        },
+        {
+          "description": "`LogOptions.Rev`: log commits reachable from an arbitrary revision (e.g. a push baseline) instead of the default HEAD",
+          "commit": "21882fb"
+        },
+        {
+          "description": "`gitscan pending` shows a live progress bar on stderr while sweeping multiple repositories, keeping stdout clean for piping and JSON",
+          "commit": "8432515"
+        }
       ],
       "fixed": [
-        { "description": "`gitscan pending` previously errored `no upstream configured` whenever `@{upstream}` did not resolve, which also blocked repos that simply had not been pushed yet; it now reports those commits as pending. An unborn or detached HEAD yields no pending commits rather than an error", "commit": "85243b6" },
-        { "description": "Build-from-source instructions in the README pointed at the wrong directory and build path (`cd gitscan` / `go build .`); corrected to `cd gogit` / `go build ./cmd/gitscan`", "commit": "54a31fa" }
+        {
+          "description": "`gitscan pending` previously errored `no upstream configured` whenever `@{upstream}` did not resolve, which also blocked repos that simply had not been pushed yet; it now reports those commits as pending. An unborn or detached HEAD yields no pending commits rather than an error",
+          "commit": "85243b6"
+        },
+        {
+          "description": "Build-from-source instructions in the README pointed at the wrong directory and build path (`cd gitscan` / `go build .`); corrected to `cd gogit` / `go build ./cmd/gitscan`",
+          "commit": "54a31fa"
+        }
       ],
       "changed": [
-        { "description": "`Repo.PendingCommits` now returns a `PendingResult` carrying the resolved push baseline (upstream, matching remote-tracking branch, or empty when never pushed) so callers can label the report; the CLI adds an `unpushed-all` mode for branches with no push target", "commit": "85243b6" },
-        { "description": "The commit renderer was generalized from pending-only (`PendingReport`/`Pending`) into a shared, list-based `CommitReport`/`Commits` API used by both `pending` and `pushed`, with an invariant multi-repo output shape", "commit": "ca377e8" },
-        { "description": "The shared `recurse` flag was scoped per subcommand and root-only flags moved out of the shared file, leaving no shared mutable flag state", "commit": "542b9c6" }
+        {
+          "description": "`Repo.PendingCommits` now returns a `PendingResult` carrying the resolved push baseline (upstream, matching remote-tracking branch, or empty when never pushed) so callers can label the report; the CLI adds an `unpushed-all` mode for branches with no push target",
+          "commit": "85243b6"
+        },
+        {
+          "description": "The commit renderer was generalized from pending-only (`PendingReport`/`Pending`) into a shared, list-based `CommitReport`/`Commits` API used by both `pending` and `pushed`, with an invariant multi-repo output shape",
+          "commit": "ca377e8"
+        },
+        {
+          "description": "The shared `recurse` flag was scoped per subcommand and root-only flags moved out of the shared file, leaving no shared mutable flag state",
+          "commit": "542b9c6"
+        }
       ],
       "tests": [
-        { "description": "Coverage for `PushedCommits` (upstream, limit and newest-first ordering, no-upstream), fleet `pending` (multi-repo grouping, summary, and the single-repo `--since-commit` guard), and the list-based renderer (fleet hiding of clean repos, JSON envelope shape, and per-repo error reporting)", "commit": "4cb1c1e" }
+        {
+          "description": "Coverage for `PushedCommits` (upstream, limit and newest-first ordering, no-upstream), fleet `pending` (multi-repo grouping, summary, and the single-repo `--since-commit` guard), and the list-based renderer (fleet hiding of clean repos, JSON envelope shape, and per-repo error reporting)",
+          "commit": "4cb1c1e"
+        }
       ],
       "documentation": [
-        { "description": "README and docs/index.md: documented fleet `pending`, the `pushed` subcommand, the positional scan directory, and the previously-undocumented `since --unpushed` flag", "commit": "54a31fa" },
-        { "description": "README: recorded fleet-sweep cold/warm cache performance (~22s cold vs ~5.5s warm across ~640 repos) and a planned `--modified-since` prefilter to skip unchanged repositories", "commit": "34d6428" }
+        {
+          "description": "README and docs/index.md: documented fleet `pending`, the `pushed` subcommand, the positional scan directory, and the previously-undocumented `since --unpushed` flag",
+          "commit": "54a31fa"
+        },
+        {
+          "description": "README: recorded fleet-sweep cold/warm cache performance (~22s cold vs ~5.5s warm across ~640 repos) and a planned `--modified-since` prefilter to skip unchanged repositories",
+          "commit": "34d6428"
+        }
       ]
     },
     {
       "version": "v0.9.0",
       "date": "2026-09-07",
       "highlights": [
-        { "description": "New `gitscan pending` subcommand and `Repo.PendingCommits`/`Repo.HasUpstream` library API report commits that exist locally but haven't been pushed, or that come after an explicit commit hash — as an aligned terminal table, copy-pasteable markdown, or JSON for agents", "commit": "a50d81b" },
-        { "description": "`gitscan pending` timestamps are now RFC 3339 with an explicit UTC offset and a weekday column, with a new `--tz` flag to normalize every timestamp to `local` or `utc` instead of each commit's own recorded offset", "commit": "d5f5fa1" },
-        { "description": "Consolidated two independent, disagreeing AI co-author detectors onto one canonical registry, fixing a bug where a bare \"Claude Code\" co-author was misread as model \"Code\"", "commit": "fcb53b8" },
-        { "description": "Fixed `gitscan since 1m` (and other bare-month durations) silently resolving as minutes instead of 30-day months", "commit": "d962811" },
-        { "description": "`gitscan` no longer silently reports a repo as clean when `git status` itself fails to run", "commit": "5c87bb4" },
-        { "description": "Moved CLI logic out of `cmd/*.go` into the `scanner` library and two new internal packages (`internal/render`, `internal/cliutil`), raising `scanner` coverage from 41.2% to 90.7% and `cmd` from 0% to 82.8%", "commit": "234cb82" }
+        {
+          "description": "New `gitscan pending` subcommand and `Repo.PendingCommits`/`Repo.HasUpstream` library API report commits that exist locally but haven't been pushed, or that come after an explicit commit hash — as an aligned terminal table, copy-pasteable markdown, or JSON for agents",
+          "commit": "a50d81b"
+        },
+        {
+          "description": "`gitscan pending` timestamps are now RFC 3339 with an explicit UTC offset and a weekday column, with a new `--tz` flag to normalize every timestamp to `local` or `utc` instead of each commit's own recorded offset",
+          "commit": "d5f5fa1"
+        },
+        {
+          "description": "Consolidated two independent, disagreeing AI co-author detectors onto one canonical registry, fixing a bug where a bare \"Claude Code\" co-author was misread as model \"Code\"",
+          "commit": "fcb53b8"
+        },
+        {
+          "description": "Fixed `gitscan since 1m` (and other bare-month durations) silently resolving as minutes instead of 30-day months",
+          "commit": "d962811"
+        },
+        {
+          "description": "`gitscan` no longer silently reports a repo as clean when `git status` itself fails to run",
+          "commit": "5c87bb4"
+        },
+        {
+          "description": "Moved CLI logic out of `cmd/*.go` into the `scanner` library and two new internal packages (`internal/render`, `internal/cliutil`), raising `scanner` coverage from 41.2% to 90.7% and `cmd` from 0% to 82.8%",
+          "commit": "234cb82"
+        }
       ],
       "added": [
-        { "description": "`Repo.PendingCommits(ctx, sinceCommit)`: commits ahead of the current branch's upstream, or after an explicit commit hash; oldest-first", "commit": "a50d81b" },
-        { "description": "`Repo.HasUpstream(ctx)`: whether the current branch has an upstream (remote-tracking) branch configured", "commit": "a50d81b" },
-        { "description": "`gitscan pending [directory]`: report unpushed commits for a single repo, with `--since-commit <hash>` to filter from an explicit commit instead", "commit": "a50d81b" },
-        { "description": "`gitscan pending --format`: `table` (aligned via `text/tabwriter`, default), `markdown` (copy-pasteable), or `json` (structured, for agents)", "commit": "45e65d1" },
-        { "description": "`gitscan pending --tz`: `original` (default, each commit's own recorded offset), `local` (this machine's timezone), or `utc`; table/markdown gained a weekday column and JSON a `weekday` field", "commit": "d5f5fa1" },
-        { "description": "`scanner.ParseDuration`: duration-string parsing (`7d`, `2w`, `1m`, `24h`) as public, directly-testable library API", "commit": "d598cee" },
-        { "description": "`RepoResult.MatchesDependency` and `RepoResult.HasIssues`: dependency-filter and issue-detection predicates promoted from `cmd/dep.go`/`cmd/root.go` to reusable `scanner` methods", "commit": "d598cee" }
+        {
+          "description": "`Repo.PendingCommits(ctx, sinceCommit)`: commits ahead of the current branch's upstream, or after an explicit commit hash; oldest-first",
+          "commit": "a50d81b"
+        },
+        {
+          "description": "`Repo.HasUpstream(ctx)`: whether the current branch has an upstream (remote-tracking) branch configured",
+          "commit": "a50d81b"
+        },
+        {
+          "description": "`gitscan pending [directory]`: report unpushed commits for a single repo, with `--since-commit <hash>` to filter from an explicit commit instead",
+          "commit": "a50d81b"
+        },
+        {
+          "description": "`gitscan pending --format`: `table` (aligned via `text/tabwriter`, default), `markdown` (copy-pasteable), or `json` (structured, for agents)",
+          "commit": "45e65d1"
+        },
+        {
+          "description": "`gitscan pending --tz`: `original` (default, each commit's own recorded offset), `local` (this machine's timezone), or `utc`; table/markdown gained a weekday column and JSON a `weekday` field",
+          "commit": "d5f5fa1"
+        },
+        {
+          "description": "`scanner.ParseDuration`: duration-string parsing (`7d`, `2w`, `1m`, `24h`) as public, directly-testable library API",
+          "commit": "d598cee"
+        },
+        {
+          "description": "`RepoResult.MatchesDependency` and `RepoResult.HasIssues`: dependency-filter and issue-detection predicates promoted from `cmd/dep.go`/`cmd/root.go` to reusable `scanner` methods",
+          "commit": "d598cee"
+        }
       ],
       "fixed": [
-        { "description": "AI co-author detection: `aicoauthor.go` and `authorship.go` maintained separate registries that disagreed on the same commit; `AnalyzeAuthorship` now builds on the single registry in `aicoauthor.go`, and its Claude model pattern requires a version number so the bare tool name is never misread as a model", "commit": "fcb53b8" },
-        { "description": "`gitscan since`: bare `Nm` durations (e.g. `1m`, `12m`) now parse as months as documented, instead of silently matching Go's stdlib minutes unit", "commit": "d962811" },
-        { "description": "`scanner.CLIGitBackend.GetStatus` now returns an error instead of reporting `(false, false)` when `git status` itself fails; surfaced as `RepoResult.StatusError` and a `status-check-failed` issue in `gitscan`'s output", "commit": "5c87bb4" },
-        { "description": "`GetStatus` no longer misclassifies a detached HEAD as having unpushed commits", "commit": "5c87bb4" },
-        { "description": "`gitscan --version` was hardcoded to `0.4.0` even after several releases; now tracks the current release (`0.9.0`)", "commit": "bfec114" },
-        { "description": "`NormalizeRemoteURL`: an explicit port in an SSH/HTTPS remote URL (e.g. `ssh://host:2222/x/y`) was folded into the path instead of being dropped", "commit": "f8b794b" }
+        {
+          "description": "AI co-author detection: `aicoauthor.go` and `authorship.go` maintained separate registries that disagreed on the same commit; `AnalyzeAuthorship` now builds on the single registry in `aicoauthor.go`, and its Claude model pattern requires a version number so the bare tool name is never misread as a model",
+          "commit": "fcb53b8"
+        },
+        {
+          "description": "`gitscan since`: bare `Nm` durations (e.g. `1m`, `12m`) now parse as months as documented, instead of silently matching Go's stdlib minutes unit",
+          "commit": "d962811"
+        },
+        {
+          "description": "`scanner.CLIGitBackend.GetStatus` now returns an error instead of reporting `(false, false)` when `git status` itself fails; surfaced as `RepoResult.StatusError` and a `status-check-failed` issue in `gitscan`'s output",
+          "commit": "5c87bb4"
+        },
+        {
+          "description": "`GetStatus` no longer misclassifies a detached HEAD as having unpushed commits",
+          "commit": "5c87bb4"
+        },
+        {
+          "description": "`gitscan --version` was hardcoded to `0.4.0` even after several releases; now tracks the current release (`0.9.0`)",
+          "commit": "bfec114"
+        },
+        {
+          "description": "`NormalizeRemoteURL`: an explicit port in an SSH/HTTPS remote URL (e.g. `ssh://host:2222/x/y`) was folded into the path instead of being dropped",
+          "commit": "f8b794b"
+        }
       ],
       "changed": [
-        { "description": "`since`/`dep`: removed an unreachable directory fallback branch left over from an earlier flag structure", "commit": "44628cc" },
-        { "description": "`scanner.CheckWorkflowCompliance`: collapsed redundant, always-true branches in compliance-level determination", "commit": "44628cc" },
-        { "description": "`cmd/*.go` rewired onto the new `scanner`/`internal/render`/`internal/cliutil` APIs: `cmd/root.go` shrinks from ~310 to ~110 lines, `cmd/pending.go` from ~200 to ~75; every subcommand is now just parse flags → call scanner → call render, with no behavior change", "commit": "234cb82" }
+        {
+          "description": "`since`/`dep`: removed an unreachable directory fallback branch left over from an earlier flag structure",
+          "commit": "44628cc"
+        },
+        {
+          "description": "`scanner.CheckWorkflowCompliance`: collapsed redundant, always-true branches in compliance-level determination",
+          "commit": "44628cc"
+        },
+        {
+          "description": "`cmd/*.go` rewired onto the new `scanner`/`internal/render`/`internal/cliutil` APIs: `cmd/root.go` shrinks from ~310 to ~110 lines, `cmd/pending.go` from ~200 to ~75; every subcommand is now just parse flags → call scanner → call render, with no behavior change",
+          "commit": "234cb82"
+        }
       ],
       "dependencies": [
-        { "description": "github.com/grokify/mogo bumped 0.74.6 → 0.74.7 → 0.74.8", "commit": "8248015" }
+        {
+          "description": "github.com/grokify/mogo bumped 0.74.6 → 0.74.7 → 0.74.8",
+          "commit": "8248015"
+        }
       ],
       "infrastructure": [
-        { "description": "golangci-lint: enabled `errcheck` per the org's never-discard-errors policy (no existing violations)", "commit": "0e849d9" }
+        {
+          "description": "golangci-lint: enabled `errcheck` per the org's never-discard-errors policy (no existing violations)",
+          "commit": "0e849d9"
+        }
       ],
       "tests": [
-        { "description": "Coverage for `PendingCommits` and `HasUpstream`: upstream with pending commits, no-upstream error path, explicit-hash mode, and upstream detection via a bare-repo + `push -u` fixture", "commit": "1bacb87" },
-        { "description": "Coverage for the `GetStatus` error path and detached-HEAD status handling", "commit": "5c87bb4" },
-        { "description": "Regression coverage for the SSH/HTTPS port-normalization fix", "commit": "f8b794b" },
-        { "description": "`internal/render` and `internal/cliutil`: full coverage for every render function and path helper, added alongside their extraction from `cmd/*.go`", "commit": "234cb82" },
-        { "description": "`scanner`: closed coverage gaps in `TopologicalSort` (including cycle detection), `GetInternalDeps`/`GetTransitiveDependents`, `CheckWorkflowCompliance`/`parseReusableWorkflowRefs`, and remaining utilities — 41.2% to 90.7%", "commit": "171d900" },
-        { "description": "`cmd/`: direct tests for every subcommand's argument validation and one real end-to-end run each against temp git-repo fixtures — 0% to 82.8%", "commit": "3af08cf" }
+        {
+          "description": "Coverage for `PendingCommits` and `HasUpstream`: upstream with pending commits, no-upstream error path, explicit-hash mode, and upstream detection via a bare-repo + `push -u` fixture",
+          "commit": "1bacb87"
+        },
+        {
+          "description": "Coverage for the `GetStatus` error path and detached-HEAD status handling",
+          "commit": "5c87bb4"
+        },
+        {
+          "description": "Regression coverage for the SSH/HTTPS port-normalization fix",
+          "commit": "f8b794b"
+        },
+        {
+          "description": "`internal/render` and `internal/cliutil`: full coverage for every render function and path helper, added alongside their extraction from `cmd/*.go`",
+          "commit": "234cb82"
+        },
+        {
+          "description": "`scanner`: closed coverage gaps in `TopologicalSort` (including cycle detection), `GetInternalDeps`/`GetTransitiveDependents`, `CheckWorkflowCompliance`/`parseReusableWorkflowRefs`, and remaining utilities — 41.2% to 90.7%",
+          "commit": "171d900"
+        },
+        {
+          "description": "`cmd/`: direct tests for every subcommand's argument validation and one real end-to-end run each against temp git-repo fixtures — 0% to 82.8%",
+          "commit": "3af08cf"
+        }
       ],
       "documentation": [
-        { "description": "README: removed the `--go-git` flag documentation (the backend was never implemented) in favor of a \"Why the Git CLI, Not go-git\" rationale section; documented the previously-undocumented `--check-workflows`/`--ref-repo` flags; fixed a stale `KnownAIProviders` reference after the AI registry consolidation", "commit": "08eb90a" },
-        { "description": "README and docs/index.md: documented the `gitscan pending` subcommand and its library API", "commit": "eddaba7" },
-        { "description": "docs/index.md synced with README (pending API/CLI bullets, fixed Releases link)", "commit": "5317003" },
-        { "description": "README: documented `gitscan pending`'s `--tz` flag, weekday column, and RFC 3339 timestamp format", "commit": "d5f5fa1" }
+        {
+          "description": "README: removed the `--go-git` flag documentation (the backend was never implemented) in favor of a \"Why the Git CLI, Not go-git\" rationale section; documented the previously-undocumented `--check-workflows`/`--ref-repo` flags; fixed a stale `KnownAIProviders` reference after the AI registry consolidation",
+          "commit": "08eb90a"
+        },
+        {
+          "description": "README and docs/index.md: documented the `gitscan pending` subcommand and its library API",
+          "commit": "eddaba7"
+        },
+        {
+          "description": "docs/index.md synced with README (pending API/CLI bullets, fixed Releases link)",
+          "commit": "5317003"
+        },
+        {
+          "description": "README: documented `gitscan pending`'s `--tz` flag, weekday column, and RFC 3339 timestamp format",
+          "commit": "d5f5fa1"
+        }
       ]
     },
     {
       "version": "v0.8.0",
       "date": "2026-08-02",
       "highlights": [
-        { "description": "gitscan `dep` can now distinguish direct from transitive requirements and match module paths as a prefix, so major-versioned dependencies (e.g. go-github/vNN) can be tracked as they climb versions", "commit": "2bdc610" }
+        {
+          "description": "gitscan `dep` can now distinguish direct from transitive requirements and match module paths as a prefix, so major-versioned dependencies (e.g. go-github/vNN) can be tracked as they climb versions",
+          "commit": "2bdc610"
+        }
       ],
       "added": [
-        { "description": "[scanner] `RepoResult.DirectDependencies`, `GoModResult.DirectDependencies`, and `HasDirectDependency()` distinguish a module a repo actually requires from one only pulled in transitively as `// indirect`", "commit": "aca14dd" },
-        { "description": "[dep] `--direct-only` flag filters `gitscan dep` results to direct requirements only", "commit": "2bdc610" },
-        { "description": "[dep] `--prefix` flag matches module paths that start with the given string, useful for finding all major versions of a module (e.g. `github.com/google/go-github`) in one pass", "commit": "2bdc610" }
+        {
+          "description": "[scanner] `RepoResult.DirectDependencies`, `GoModResult.DirectDependencies`, and `HasDirectDependency()` distinguish a module a repo actually requires from one only pulled in transitively as `// indirect`",
+          "commit": "aca14dd"
+        },
+        {
+          "description": "[dep] `--direct-only` flag filters `gitscan dep` results to direct requirements only",
+          "commit": "2bdc610"
+        },
+        {
+          "description": "[dep] `--prefix` flag matches module paths that start with the given string, useful for finding all major versions of a module (e.g. `github.com/google/go-github`) in one pass",
+          "commit": "2bdc610"
+        }
       ]
     },
     {
       "version": "v0.7.0",
       "date": "2026-07-26",
       "highlights": [
-        { "description": "AI co-author parsing: identify AI tools from Co-authored-by trailers with model version extraction", "commit": "0a33df2" },
-        { "description": "Commit/LOC aggregation by conventional-commit category with AI-assisted metrics", "commit": "3068581" }
+        {
+          "description": "AI co-author parsing: identify AI tools from Co-authored-by trailers with model version extraction",
+          "commit": "0a33df2"
+        },
+        {
+          "description": "Commit/LOC aggregation by conventional-commit category with AI-assisted metrics",
+          "commit": "3068581"
+        }
       ],
       "added": [
-        { "description": "Commit.AICoAuthors: identify AI coding assistants from co-author trailers using DefaultAITools registry", "commit": "0a33df2" },
-        { "description": "Commit.AICoAuthorsWithTools: custom tool registry variant for AI co-author matching", "commit": "0a33df2" },
-        { "description": "Commit.IsAIAssisted: returns true if any co-author is a recognized AI tool", "commit": "0a33df2" },
-        { "description": "MatchAITool: match a signature against a tool pattern registry with model extraction", "commit": "0a33df2" },
-        { "description": "AICoAuthor, AIToolPattern types for structured AI co-author representation", "commit": "0a33df2" },
-        { "description": "Repo.CollectCommitStats: single-repo commit/LOC aggregation by conventional-commit type with date range filtering", "commit": "3068581" },
-        { "description": "AggregateCommitStats: parallel multi-repo commit statistics aggregation", "commit": "3068581" },
-        { "description": "RepoCommitStats, MultiRepoCommitStats: structured statistics with category breakdown and AI metrics", "commit": "3068581" },
-        { "description": "CategoryStats, AIStats, ToolStats, ModelStats: granular statistics types for commits and LOC", "commit": "3068581" },
-        { "description": "MultiRepoCommitStats.CategoryBreakdown: categories sorted by commit count descending", "commit": "3068581" },
-        { "description": "MultiRepoCommitStats.CategoryPercentages: percentage breakdown by category", "commit": "3068581" }
+        {
+          "description": "Commit.AICoAuthors: identify AI coding assistants from co-author trailers using DefaultAITools registry",
+          "commit": "0a33df2"
+        },
+        {
+          "description": "Commit.AICoAuthorsWithTools: custom tool registry variant for AI co-author matching",
+          "commit": "0a33df2"
+        },
+        {
+          "description": "Commit.IsAIAssisted: returns true if any co-author is a recognized AI tool",
+          "commit": "0a33df2"
+        },
+        {
+          "description": "MatchAITool: match a signature against a tool pattern registry with model extraction",
+          "commit": "0a33df2"
+        },
+        {
+          "description": "AICoAuthor, AIToolPattern types for structured AI co-author representation",
+          "commit": "0a33df2"
+        },
+        {
+          "description": "Repo.CollectCommitStats: single-repo commit/LOC aggregation by conventional-commit type with date range filtering",
+          "commit": "3068581"
+        },
+        {
+          "description": "AggregateCommitStats: parallel multi-repo commit statistics aggregation",
+          "commit": "3068581"
+        },
+        {
+          "description": "RepoCommitStats, MultiRepoCommitStats: structured statistics with category breakdown and AI metrics",
+          "commit": "3068581"
+        },
+        {
+          "description": "CategoryStats, AIStats, ToolStats, ModelStats: granular statistics types for commits and LOC",
+          "commit": "3068581"
+        },
+        {
+          "description": "MultiRepoCommitStats.CategoryBreakdown: categories sorted by commit count descending",
+          "commit": "3068581"
+        },
+        {
+          "description": "MultiRepoCommitStats.CategoryPercentages: percentage breakdown by category",
+          "commit": "3068581"
+        }
       ],
       "tests": [
-        { "description": "AI co-author tests: tool matching, model extraction, GitHub noreply suffix handling, multi-AI commits", "commit": "0a33df2" },
-        { "description": "Commit stats tests: single-repo aggregation, category breakdown, AI-assisted tracking, empty repo handling", "commit": "3068581" }
+        {
+          "description": "AI co-author tests: tool matching, model extraction, GitHub noreply suffix handling, multi-AI commits",
+          "commit": "0a33df2"
+        },
+        {
+          "description": "Commit stats tests: single-repo aggregation, category breakdown, AI-assisted tracking, empty repo handling",
+          "commit": "3068581"
+        }
       ]
     },
     {
       "version": "v0.6.0",
       "date": "2026-07-25",
       "highlights": [
-        { "description": "AI authorship detection: canonical registry of AI coding assistant co-author signatures with model identity extraction", "commit": "72f9f05" },
-        { "description": "Conventional commit parsing and case-insensitive trailer lookup", "commit": "0c32782" },
-        { "description": "Generic parallel multi-repo execution with progress reporting", "commit": "6761eb2" },
-        { "description": "Incremental log ingestion via SinceCommit and chronological Reverse ordering", "commit": "c5f8456" }
+        {
+          "description": "AI authorship detection: canonical registry of AI coding assistant co-author signatures with model identity extraction",
+          "commit": "72f9f05"
+        },
+        {
+          "description": "Conventional commit parsing and case-insensitive trailer lookup",
+          "commit": "0c32782"
+        },
+        {
+          "description": "Generic parallel multi-repo execution with progress reporting",
+          "commit": "6761eb2"
+        },
+        {
+          "description": "Incremental log ingestion via SinceCommit and chronological Reverse ordering",
+          "commit": "c5f8456"
+        }
       ],
       "added": [
-        { "description": "AIProviderByEmail and AIToolByEmail: match co-author emails to known AI providers (Claude Code, GitHub Copilot, Gemini CLI, Cursor, Aider)", "commit": "72f9f05" },
-        { "description": "ParseAIModel: extract model identity from co-author names (e.g. 'Claude Opus 4.6' → opus-4.6)", "commit": "72f9f05" },
-        { "description": "AnalyzeAuthorship: full attribution breakdown of a commit into AI tools, models, and human co-authors", "commit": "72f9f05" },
-        { "description": "KnownAIProviders: canonical registry with GitHub noreply suffix matching for variable user-ID prefixes", "commit": "72f9f05" },
-        { "description": "ParseConventionalCommit: extract type, scope, breaking flag, and subject from conventional commit messages", "commit": "0c32782" },
-        { "description": "Commit.TrailerValue and TrailerValues: case-insensitive trailer lookup by key", "commit": "0c32782" },
-        { "description": "Commit.ParseConventional: convenience method combining Commit with ParseConventionalCommit", "commit": "0c32782" },
-        { "description": "RunAll: generic concurrent execution across multiple repositories with configurable workers and context cancellation", "commit": "6761eb2" },
-        { "description": "RunAllPaths: lower-level parallel variant for non-repo directories", "commit": "6761eb2" },
-        { "description": "RunAllWithProgress: parallel execution with a ProgressFunc callback", "commit": "6761eb2" },
-        { "description": "LogOptions.SinceCommit: incremental ingestion via sha..HEAD range", "commit": "c5f8456" },
-        { "description": "LogOptions.Reverse: chronological (oldest-first) commit ordering", "commit": "c5f8456" }
+        {
+          "description": "AIProviderByEmail and AIToolByEmail: match co-author emails to known AI providers (Claude Code, GitHub Copilot, Gemini CLI, Cursor, Aider)",
+          "commit": "72f9f05"
+        },
+        {
+          "description": "ParseAIModel: extract model identity from co-author names (e.g. 'Claude Opus 4.6' → opus-4.6)",
+          "commit": "72f9f05"
+        },
+        {
+          "description": "AnalyzeAuthorship: full attribution breakdown of a commit into AI tools, models, and human co-authors",
+          "commit": "72f9f05"
+        },
+        {
+          "description": "KnownAIProviders: canonical registry with GitHub noreply suffix matching for variable user-ID prefixes",
+          "commit": "72f9f05"
+        },
+        {
+          "description": "ParseConventionalCommit: extract type, scope, breaking flag, and subject from conventional commit messages",
+          "commit": "0c32782"
+        },
+        {
+          "description": "Commit.TrailerValue and TrailerValues: case-insensitive trailer lookup by key",
+          "commit": "0c32782"
+        },
+        {
+          "description": "Commit.ParseConventional: convenience method combining Commit with ParseConventionalCommit",
+          "commit": "0c32782"
+        },
+        {
+          "description": "RunAll: generic concurrent execution across multiple repositories with configurable workers and context cancellation",
+          "commit": "6761eb2"
+        },
+        {
+          "description": "RunAllPaths: lower-level parallel variant for non-repo directories",
+          "commit": "6761eb2"
+        },
+        {
+          "description": "RunAllWithProgress: parallel execution with a ProgressFunc callback",
+          "commit": "6761eb2"
+        },
+        {
+          "description": "LogOptions.SinceCommit: incremental ingestion via sha..HEAD range",
+          "commit": "c5f8456"
+        },
+        {
+          "description": "LogOptions.Reverse: chronological (oldest-first) commit ordering",
+          "commit": "c5f8456"
+        }
       ],
       "tests": [
-        { "description": "AI authorship tests: provider matching, model parsing, multi-AI attribution, no-AI baseline", "commit": "72f9f05" },
-        { "description": "Conventional commit tests: type/scope/breaking parsing, non-matching subjects", "commit": "0c32782" },
-        { "description": "Trailer lookup tests: case-insensitive single and multi-value retrieval", "commit": "0c32782" },
-        { "description": "Parallel execution tests: RunAll, RunAllPaths, RunAllWithProgress, non-repo error, context cancellation", "commit": "6761eb2" },
-        { "description": "Log tests: SinceCommit incremental ranges, Reverse ordering", "commit": "c5f8456" }
+        {
+          "description": "AI authorship tests: provider matching, model parsing, multi-AI attribution, no-AI baseline",
+          "commit": "72f9f05"
+        },
+        {
+          "description": "Conventional commit tests: type/scope/breaking parsing, non-matching subjects",
+          "commit": "0c32782"
+        },
+        {
+          "description": "Trailer lookup tests: case-insensitive single and multi-value retrieval",
+          "commit": "0c32782"
+        },
+        {
+          "description": "Parallel execution tests: RunAll, RunAllPaths, RunAllWithProgress, non-repo error, context cancellation",
+          "commit": "6761eb2"
+        },
+        {
+          "description": "Log tests: SinceCommit incremental ranges, Reverse ordering",
+          "commit": "c5f8456"
+        }
       ],
       "dependencies": [
-        { "description": "GitHub Actions checkout bumped from v6 to v7", "commit": "67e7050" },
-        { "description": "GitHub Actions setup-go bumped from v6 to v7", "commit": "91ebd73" }
+        {
+          "description": "GitHub Actions checkout bumped from v6 to v7",
+          "commit": "67e7050"
+        },
+        {
+          "description": "GitHub Actions setup-go bumped from v6 to v7",
+          "commit": "91ebd73"
+        }
       ],
       "documentation": [
-        { "description": "README updated with library features table, badge URLs fixed to point to gogit", "commit": "b3454fd" },
-        { "description": "MkDocs index updated with new v0.6.0 features", "commit": "b3454fd" },
-        { "description": "Added docs/releases/v0.6.0.md release notes", "commit": "8d23d77" }
+        {
+          "description": "README updated with library features table, badge URLs fixed to point to gogit",
+          "commit": "b3454fd"
+        },
+        {
+          "description": "MkDocs index updated with new v0.6.0 features",
+          "commit": "b3454fd"
+        },
+        {
+          "description": "Added docs/releases/v0.6.0.md release notes",
+          "commit": "8d23d77"
+        }
       ]
     },
     {
       "version": "v0.5.0",
       "date": "2026-07-18",
       "highlights": [
-        { "description": "Repository renamed from gitscan to gogit: a generic Git base library for Go, with the gitscan CLI preserved at cmd/gitscan", "commit": "744e28f" },
-        { "description": "New core git library: repository discovery, commit-log parsing with Co-authored-by trailers and change stats, branch/origin metadata, tag dates", "commit": "2e3097e" },
-        { "description": "Workflow compliance scanning against a reference repository", "commit": "756baaf" }
+        {
+          "description": "Repository renamed from gitscan to gogit: a generic Git base library for Go, with the gitscan CLI preserved at cmd/gitscan",
+          "commit": "744e28f"
+        },
+        {
+          "description": "New core git library: repository discovery, commit-log parsing with Co-authored-by trailers and change stats, branch/origin metadata, tag dates",
+          "commit": "2e3097e"
+        },
+        {
+          "description": "Workflow compliance scanning against a reference repository",
+          "commit": "756baaf"
+        }
       ],
       "breaking": [
-        { "description": "Module path changed from github.com/grokify/gitscan to github.com/grokify/gogit; the root package is now the gogit library and the CLI entrypoint moved to cmd/gitscan (install with go install github.com/grokify/gogit/cmd/gitscan@latest)", "commit": "744e28f" },
-        { "description": "--go-git flag removed from all gitscan subcommands; scanner.GoGitBackend no longer exists and the go-git/v5 dependency tree is dropped from the module", "commit": "3987794" }
+        {
+          "description": "Module path changed from github.com/grokify/gitscan to github.com/grokify/gogit; the root package is now the gogit library and the CLI entrypoint moved to cmd/gitscan (install with go install github.com/grokify/gogit/cmd/gitscan@latest)",
+          "commit": "744e28f"
+        },
+        {
+          "description": "--go-git flag removed from all gitscan subcommands; scanner.GoGitBackend no longer exists and the go-git/v5 dependency tree is dropped from the module",
+          "commit": "3987794"
+        }
       ],
       "changed": [
-        { "description": "git execution pinned to C locale with credential prompts disabled, making error-condition detection locale-independent", "commit": "2b320c2" },
-        { "description": "scanner rebuilt on the root gogit library: IsRepo now also recognizes worktree gitfiles", "commit": "3987794" },
-        { "description": "commit-log parsing refactored to leading-sentinel records, removing lookahead numstat attribution", "commit": "f0273a5" }
+        {
+          "description": "git execution pinned to C locale with credential prompts disabled, making error-condition detection locale-independent",
+          "commit": "2b320c2"
+        },
+        {
+          "description": "scanner rebuilt on the root gogit library: IsRepo now also recognizes worktree gitfiles",
+          "commit": "3987794"
+        },
+        {
+          "description": "commit-log parsing refactored to leading-sentinel records, removing lookahead numstat attribution",
+          "commit": "f0273a5"
+        }
       ],
       "added": [
-        { "description": "gogit.Discover: depth-bounded repository discovery that does not descend into repositories", "commit": "2e3097e" },
-        { "description": "Repo.Log: commit-log parsing with calendar-date filtering, author/committer identities, subjects, trailers, and --numstat change stats", "commit": "2e3097e" },
-        { "description": "Commit.CoAuthors: Co-authored-by trailer extraction to name/email signatures", "commit": "2e3097e" },
-        { "description": "Repo.Branch, Repo.OriginURL, and NormalizeRemoteURL (https/ssh/git remotes to host/path identifiers)", "commit": "2e3097e" },
-        { "description": "Repo.Tags and Repo.TagsWithDates (tag creation dates via for-each-ref)", "commit": "2e3097e" },
-        { "description": "scanner: workflow compliance checking against a reference repo via --check-workflows and --ref-repo", "commit": "756baaf" },
-        { "description": "since --unpushed/-u flag: filter repos with uncommitted or unpushed changes", "commit": "d219b43" }
+        {
+          "description": "gogit.Discover: depth-bounded repository discovery that does not descend into repositories",
+          "commit": "2e3097e"
+        },
+        {
+          "description": "Repo.Log: commit-log parsing with calendar-date filtering, author/committer identities, subjects, trailers, and --numstat change stats",
+          "commit": "2e3097e"
+        },
+        {
+          "description": "Commit.CoAuthors: Co-authored-by trailer extraction to name/email signatures",
+          "commit": "2e3097e"
+        },
+        {
+          "description": "Repo.Branch, Repo.OriginURL, and NormalizeRemoteURL (https/ssh/git remotes to host/path identifiers)",
+          "commit": "2e3097e"
+        },
+        {
+          "description": "Repo.Tags and Repo.TagsWithDates (tag creation dates via for-each-ref)",
+          "commit": "2e3097e"
+        },
+        {
+          "description": "scanner: workflow compliance checking against a reference repo via --check-workflows and --ref-repo",
+          "commit": "756baaf"
+        },
+        {
+          "description": "since --unpushed/-u flag: filter repos with uncommitted or unpushed changes",
+          "commit": "d219b43"
+        }
       ],
       "dependencies": [
-        { "description": "go-git v5.19.1, mogo v0.74.6, yaml.v3 v3.0.1; GitHub Actions checkout/setup-go pinned to v6", "commit": "744e28f" }
+        {
+          "description": "go-git v5.19.1, mogo v0.74.6, yaml.v3 v3.0.1; GitHub Actions checkout/setup-go pinned to v6",
+          "commit": "744e28f"
+        }
       ],
       "infrastructure": [
-        { "description": "CI migrated to shared workflow files (go-ci, go-lint, go-sast-codeql)", "commit": "9521180" }
+        {
+          "description": "CI migrated to shared workflow files (go-ci, go-lint, go-sast-codeql)",
+          "commit": "9521180"
+        }
       ],
       "tests": [
-        { "description": "Core library tests with fixture repositories in isolated git config (no inherited signing, hooks, or templates)", "commit": "816e6b9" },
-        { "description": "scanner characterization tests: status detection, module mismatch, replace counting", "commit": "c9a012c" }
+        {
+          "description": "Core library tests with fixture repositories in isolated git config (no inherited signing, hooks, or templates)",
+          "commit": "816e6b9"
+        },
+        {
+          "description": "scanner characterization tests: status detection, module mismatch, replace counting",
+          "commit": "c9a012c"
+        }
       ],
       "documentation": [
-        { "description": "README reframed for the gogit library with the gitscan CLI as a bundled tool", "commit": "2485217" },
-        { "description": "Added docs/releases/v0.5.0.md and MkDocs site scaffolding", "commit": "" }
+        {
+          "description": "README reframed for the gogit library with the gitscan CLI as a bundled tool",
+          "commit": "2485217"
+        },
+        {
+          "description": "Added docs/releases/v0.5.0.md and MkDocs site scaffolding",
+          "commit": ""
+        }
       ]
     },
     {
       "version": "v0.4.0",
       "date": "2026-02-21",
       "highlights": [
-        { "description": "Restructured CLI into focused Cobra subcommands", "commit": "ce196b9" },
-        { "description": "New `since` subcommand with optional `--dep` flag for AND logic", "commit": "ce196b9" },
-        { "description": "New `dep` subcommand for dependency filtering", "commit": "ce196b9" },
-        { "description": "Homebrew distribution via `brew install gitscan`", "commit": "723b458" }
+        {
+          "description": "Restructured CLI into focused Cobra subcommands",
+          "commit": "ce196b9"
+        },
+        {
+          "description": "New `since` subcommand with optional `--dep` flag for AND logic",
+          "commit": "ce196b9"
+        },
+        {
+          "description": "New `dep` subcommand for dependency filtering",
+          "commit": "ce196b9"
+        },
+        {
+          "description": "Homebrew distribution via `brew install gitscan`",
+          "commit": "723b458"
+        }
       ],
       "added": [
-        { "description": "`since` subcommand: filter repos by modification time with duration argument", "commit": "ce196b9" },
-        { "description": "`dep` subcommand: filter repos by dependency on a specific module", "commit": "ce196b9" },
-        { "description": "`since --dep` flag: combine time and dependency filters with AND logic", "commit": "ce196b9" },
-        { "description": "Shared helpers in `cmd/shared.go`: `resolvePath()`, `createGitBackend()`, `parseDuration()`", "commit": "ce196b9" },
-        { "description": "GoReleaser configuration for cross-platform builds (linux, darwin, windows; amd64, arm64)", "commit": "723b458" },
-        { "description": "GitHub Actions release workflow triggered on version tags", "commit": "723b458" },
-        { "description": "Homebrew formula distribution via `grokify/homebrew-tap`", "commit": "723b458" }
+        {
+          "description": "`since` subcommand: filter repos by modification time with duration argument",
+          "commit": "ce196b9"
+        },
+        {
+          "description": "`dep` subcommand: filter repos by dependency on a specific module",
+          "commit": "ce196b9"
+        },
+        {
+          "description": "`since --dep` flag: combine time and dependency filters with AND logic",
+          "commit": "ce196b9"
+        },
+        {
+          "description": "Shared helpers in `cmd/shared.go`: `resolvePath()`, `createGitBackend()`, `parseDuration()`",
+          "commit": "ce196b9"
+        },
+        {
+          "description": "GoReleaser configuration for cross-platform builds (linux, darwin, windows; amd64, arm64)",
+          "commit": "723b458"
+        },
+        {
+          "description": "GitHub Actions release workflow triggered on version tags",
+          "commit": "723b458"
+        },
+        {
+          "description": "Homebrew formula distribution via `grokify/homebrew-tap`",
+          "commit": "723b458"
+        }
       ],
       "changed": [
-        { "description": "Root command now only scans for issues (uncommitted, replace, mismatch)", "commit": "ce196b9" },
-        { "description": "Time filtering moved from `--since` flag to `since` subcommand", "commit": "ce196b9" },
-        { "description": "Dependency filtering moved from `--dep` flag to `dep` subcommand", "commit": "ce196b9" }
+        {
+          "description": "Root command now only scans for issues (uncommitted, replace, mismatch)",
+          "commit": "ce196b9"
+        },
+        {
+          "description": "Time filtering moved from `--since` flag to `since` subcommand",
+          "commit": "ce196b9"
+        },
+        {
+          "description": "Dependency filtering moved from `--dep` flag to `dep` subcommand",
+          "commit": "ce196b9"
+        }
       ],
       "breaking": [
-        { "description": "`--since` flag removed from root command; use `gitscan since <duration>` instead", "commit": "ce196b9" },
-        { "description": "`--dep` flag removed from root command; use `gitscan dep <module>` instead", "commit": "ce196b9" }
+        {
+          "description": "`--since` flag removed from root command; use `gitscan since <duration>` instead",
+          "commit": "ce196b9"
+        },
+        {
+          "description": "`--dep` flag removed from root command; use `gitscan dep <module>` instead",
+          "commit": "ce196b9"
+        }
       ],
       "documentation": [
-        { "description": "Updated README with Homebrew installation and new subcommand structure", "commit": "" },
-        { "description": "Added RELEASE_NOTES_v0.4.0.md", "commit": "" }
+        {
+          "description": "Updated README with Homebrew installation and new subcommand structure",
+          "commit": ""
+        },
+        {
+          "description": "Added RELEASE_NOTES_v0.4.0.md",
+          "commit": ""
+        }
       ]
     },
     {
       "version": "v0.3.0",
       "date": "2026-02-14",
       "highlights": [
-        { "description": "Git backend abstraction with go-git and CLI implementations", "commit": "4e2ea58" },
-        { "description": "Optional `--go-git` flag for pure Go git operations (no process spawning)", "commit": "4e2ea58" }
+        {
+          "description": "Git backend abstraction with go-git and CLI implementations",
+          "commit": "4e2ea58"
+        },
+        {
+          "description": "Optional `--go-git` flag for pure Go git operations (no process spawning)",
+          "commit": "4e2ea58"
+        }
       ],
       "added": [
-        { "description": "Git backend interface with `GitBackend`, `GoGitBackend`, and `CLIGitBackend` types", "commit": "4e2ea58" },
-        { "description": "`--go-git` flag to use go-git library instead of git CLI", "commit": "4e2ea58" },
-        { "description": "Go-git integration for pure Go git operations without external process spawning", "commit": "4e2ea58" }
+        {
+          "description": "Git backend interface with `GitBackend`, `GoGitBackend`, and `CLIGitBackend` types",
+          "commit": "4e2ea58"
+        },
+        {
+          "description": "`--go-git` flag to use go-git library instead of git CLI",
+          "commit": "4e2ea58"
+        },
+        {
+          "description": "Go-git integration for pure Go git operations without external process spawning",
+          "commit": "4e2ea58"
+        }
       ],
       "changed": [
-        { "description": "Git CLI is now the default backend (faster and more compatible)", "commit": "4e2ea58" },
-        { "description": "Scanner package uses `GitBackend` interface for pluggable git implementations", "commit": "4e2ea58" }
+        {
+          "description": "Git CLI is now the default backend (faster and more compatible)",
+          "commit": "4e2ea58"
+        },
+        {
+          "description": "Scanner package uses `GitBackend` interface for pluggable git implementations",
+          "commit": "4e2ea58"
+        }
       ],
       "performance": [
-        { "description": "Git CLI backend: ~2.5s for 600 repos (default, faster)", "commit": "4e2ea58" },
-        { "description": "Go-git backend: ~10s for 600 repos (optional, pure Go)", "commit": "4e2ea58" }
+        {
+          "description": "Git CLI backend: ~2.5s for 600 repos (default, faster)",
+          "commit": "4e2ea58"
+        },
+        {
+          "description": "Go-git backend: ~10s for 600 repos (optional, pure Go)",
+          "commit": "4e2ea58"
+        }
       ],
       "dependencies": [
-        { "description": "Added `github.com/go-git/go-git/v5` for pure Go git operations", "commit": "4e2ea58" }
+        {
+          "description": "Added `github.com/go-git/go-git/v5` for pure Go git operations",
+          "commit": "4e2ea58"
+        }
       ],
       "documentation": [
-        { "description": "Updated README with `--go-git` flag and backend comparison table", "commit": "f9e8523" }
+        {
+          "description": "Updated README with `--go-git` flag and backend comparison table",
+          "commit": "f9e8523"
+        }
       ]
     },
     {
       "version": "v0.2.0",
       "date": "2026-02-14",
       "highlights": [
-        { "description": "New `order` subcommand for topological dependency ordering", "commit": "104f2a2" },
-        { "description": "Time-based filtering with `-since` flag", "commit": "33af0ef" },
-        { "description": "Parallel scanning with 50% faster performance", "commit": "7f8ff17" }
+        {
+          "description": "New `order` subcommand for topological dependency ordering",
+          "commit": "104f2a2"
+        },
+        {
+          "description": "Time-based filtering with `-since` flag",
+          "commit": "33af0ef"
+        },
+        {
+          "description": "Parallel scanning with 50% faster performance",
+          "commit": "7f8ff17"
+        }
       ],
       "added": [
-        { "description": "New `order` subcommand to show repos in dependency order (update dependencies first)", "commit": "104f2a2" },
-        { "description": "Topological sort using Kahn's algorithm for dependency-aware ordering", "commit": "7f8ff17" },
-        { "description": "Time-based filtering with `-since` flag supporting `7d`, `2w`, `1m` duration formats", "commit": "33af0ef" },
-        { "description": "Transitive dependency tracking with `-t` flag to include repos that depend on modified repos", "commit": "7f8ff17" },
-        { "description": "Unpushed commit detection with `-u` flag to filter repos needing push", "commit": "7f8ff17" },
-        { "description": "Internal dependency display showing `(depends on: x, y)` in output", "commit": "33af0ef" },
-        { "description": "Latest modification time tracking per repository", "commit": "7f8ff17" },
-        { "description": "Parallel scanning using goroutine worker pool (uses GOMAXPROCS workers)", "commit": "7f8ff17" },
-        { "description": "Lazy evaluation of expensive operations (mod time, unpushed checks)", "commit": "7f8ff17" },
-        { "description": "Aligned output formatting with consistent column widths", "commit": "33af0ef" }
+        {
+          "description": "New `order` subcommand to show repos in dependency order (update dependencies first)",
+          "commit": "104f2a2"
+        },
+        {
+          "description": "Topological sort using Kahn's algorithm for dependency-aware ordering",
+          "commit": "7f8ff17"
+        },
+        {
+          "description": "Time-based filtering with `-since` flag supporting `7d`, `2w`, `1m` duration formats",
+          "commit": "33af0ef"
+        },
+        {
+          "description": "Transitive dependency tracking with `-t` flag to include repos that depend on modified repos",
+          "commit": "7f8ff17"
+        },
+        {
+          "description": "Unpushed commit detection with `-u` flag to filter repos needing push",
+          "commit": "7f8ff17"
+        },
+        {
+          "description": "Internal dependency display showing `(depends on: x, y)` in output",
+          "commit": "33af0ef"
+        },
+        {
+          "description": "Latest modification time tracking per repository",
+          "commit": "7f8ff17"
+        },
+        {
+          "description": "Parallel scanning using goroutine worker pool (uses GOMAXPROCS workers)",
+          "commit": "7f8ff17"
+        },
+        {
+          "description": "Lazy evaluation of expensive operations (mod time, unpushed checks)",
+          "commit": "7f8ff17"
+        },
+        {
+          "description": "Aligned output formatting with consistent column widths",
+          "commit": "33af0ef"
+        }
       ],
       "changed": [
-        { "description": "Migrated CLI from standard `flag` package to Cobra for better UX", "commit": "33af0ef" },
-        { "description": "Added short flags: `-d` (dir), `-f` (format), `-r` (recurse), `-s` (since)", "commit": "33af0ef" },
-        { "description": "Output now shows numbered list with alphabetical sorting", "commit": "33af0ef" },
-        { "description": "Refactored scanner package with `ScanOptions` for configurable behavior", "commit": "7f8ff17" }
+        {
+          "description": "Migrated CLI from standard `flag` package to Cobra for better UX",
+          "commit": "33af0ef"
+        },
+        {
+          "description": "Added short flags: `-d` (dir), `-f` (format), `-r` (recurse), `-s` (since)",
+          "commit": "33af0ef"
+        },
+        {
+          "description": "Output now shows numbered list with alphabetical sorting",
+          "commit": "33af0ef"
+        },
+        {
+          "description": "Refactored scanner package with `ScanOptions` for configurable behavior",
+          "commit": "7f8ff17"
+        }
       ],
       "performance": [
-        { "description": "Optimized git status to single command per repo (was 2-3 commands)", "commit": "6e88de7" },
-        { "description": "Scan time reduced by ~50% (6.7s → 3.4s for 600 repos)", "commit": "6e88de7" }
+        {
+          "description": "Optimized git status to single command per repo (was 2-3 commands)",
+          "commit": "6e88de7"
+        },
+        {
+          "description": "Scan time reduced by ~50% (6.7s → 3.4s for 600 repos)",
+          "commit": "6e88de7"
+        }
       ],
       "dependencies": [
-        { "description": "Added `github.com/spf13/cobra` for CLI framework", "commit": "33af0ef" },
-        { "description": "Added `github.com/grokify/mogo/fmt/progress` for progress bar rendering", "commit": "9c27c2a" }
+        {
+          "description": "Added `github.com/spf13/cobra` for CLI framework",
+          "commit": "33af0ef"
+        },
+        {
+          "description": "Added `github.com/grokify/mogo/fmt/progress` for progress bar rendering",
+          "commit": "9c27c2a"
+        }
       ],
       "documentation": [
-        { "description": "Updated README with order subcommand, new flags, and performance section", "commit": "e319764" },
-        { "description": "Added RELEASE_NOTES_v0.2.0.md", "commit": "e319764" }
+        {
+          "description": "Updated README with order subcommand, new flags, and performance section",
+          "commit": "e319764"
+        },
+        {
+          "description": "Added RELEASE_NOTES_v0.2.0.md",
+          "commit": "e319764"
+        }
       ]
     },
     {
       "version": "v0.1.0",
       "date": "2026-01-17",
       "highlights": [
-        { "description": "CLI tool to scan multiple Git repositories and identify repos needing attention", "commit": "97d0739" },
-        { "description": "Zero external dependencies - uses only Go standard library", "commit": "97d0739" }
+        {
+          "description": "CLI tool to scan multiple Git repositories and identify repos needing attention",
+          "commit": "97d0739"
+        },
+        {
+          "description": "Zero external dependencies - uses only Go standard library",
+          "commit": "97d0739"
+        }
       ],
       "added": [
-        { "description": "Repository scanner that checks for uncommitted changes using `git status --porcelain`", "commit": "97d0739" },
-        { "description": "Replace directive detection in go.mod files (both single-line and block format)", "commit": "97d0739" },
-        { "description": "Module name mismatch detection comparing go.mod module path with directory name", "commit": "97d0739" },
-        { "description": "Dependency filtering with `-dep` flag to find repos depending on a specific module", "commit": "97d0739" },
-        { "description": "Recursive nested go.mod search with `-recurse` flag for monorepo support", "commit": "97d0739" },
-        { "description": "Progress bar with percentage, count, and current repo name during scanning", "commit": "97d0739" },
-        { "description": "Two output formats: human-readable list (default) and compact markdown table", "commit": "97d0739" },
-        { "description": "Summary statistics showing counts of uncommitted changes, replace directives, and mismatches", "commit": "97d0739" },
-        { "description": "Tilde expansion for home directory paths", "commit": "97d0739" },
-        { "description": "Support for positional argument or `-dir` flag for directory path", "commit": "97d0739" }
+        {
+          "description": "Repository scanner that checks for uncommitted changes using `git status --porcelain`",
+          "commit": "97d0739"
+        },
+        {
+          "description": "Replace directive detection in go.mod files (both single-line and block format)",
+          "commit": "97d0739"
+        },
+        {
+          "description": "Module name mismatch detection comparing go.mod module path with directory name",
+          "commit": "97d0739"
+        },
+        {
+          "description": "Dependency filtering with `-dep` flag to find repos depending on a specific module",
+          "commit": "97d0739"
+        },
+        {
+          "description": "Recursive nested go.mod search with `-recurse` flag for monorepo support",
+          "commit": "97d0739"
+        },
+        {
+          "description": "Progress bar with percentage, count, and current repo name during scanning",
+          "commit": "97d0739"
+        },
+        {
+          "description": "Two output formats: human-readable list (default) and compact markdown table",
+          "commit": "97d0739"
+        },
+        {
+          "description": "Summary statistics showing counts of uncommitted changes, replace directives, and mismatches",
+          "commit": "97d0739"
+        },
+        {
+          "description": "Tilde expansion for home directory paths",
+          "commit": "97d0739"
+        },
+        {
+          "description": "Support for positional argument or `-dir` flag for directory path",
+          "commit": "97d0739"
+        }
       ],
       "documentation": [
-        { "description": "README with installation, usage, flags reference, and examples", "commit": "b4bb43e" },
-        { "description": "MIT license", "commit": "b4bb43e" }
+        {
+          "description": "README with installation, usage, flags reference, and examples",
+          "commit": "b4bb43e"
+        },
+        {
+          "description": "MIT license",
+          "commit": "b4bb43e"
+        }
       ]
     }
   ]
