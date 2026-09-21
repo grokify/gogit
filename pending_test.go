@@ -163,6 +163,119 @@ func TestPendingCommitsRemoteTrackingBaseline(t *testing.T) {
 	}
 }
 
+// A freshly created feature branch — no upstream configured, and no
+// origin/<branch> exists because it was never pushed under its own name —
+// falls back to the remote's default branch, reporting only the commits
+// unique to the feature branch rather than every commit reachable from HEAD
+// (which would include the whole of main's history).
+func TestPendingCommitsFallsBackToRemoteDefaultBranch(t *testing.T) {
+	dir, _ := pushableRepo(t)
+	run(t, dir, "checkout", "-qb", "feat/x")
+	commitFile(t, dir, "b.txt", "one\n", "feat: add b")
+	commitFile(t, dir, "c.txt", "two\n", "feat: add c")
+
+	r, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	has, err := r.HasUpstream(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if has {
+		t.Fatal("precondition: a freshly checked out branch must have no upstream")
+	}
+
+	res, err := r.PendingCommits(context.Background(), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Commits) != 2 {
+		t.Fatalf("expected only the 2 commits unique to feat/x, got %d: %+v", len(res.Commits), res.Commits)
+	}
+	if res.Baseline != "origin/main" {
+		t.Errorf("expected baseline origin/main, got %q", res.Baseline)
+	}
+	if res.Branch != "feat/x" {
+		t.Errorf("expected branch %q, got %q", "feat/x", res.Branch)
+	}
+	if res.Commits[0].Subject != "feat: add b" || res.Commits[1].Subject != "feat: add c" {
+		t.Errorf("unexpected order: %q, %q", res.Commits[0].Subject, res.Commits[1].Subject)
+	}
+}
+
+// When the remote has no branches at all (nothing has ever been pushed),
+// the default-branch fallback also fails to resolve, and every commit
+// reachable from HEAD remains pending — the pre-existing "never pushed
+// anywhere" behavior must not regress.
+func TestPendingCommitsNoRemoteDefaultBranchListsAll(t *testing.T) {
+	root := t.TempDir()
+	origin := filepath.Join(root, "origin.git")
+	run(t, root, "init", "-q", "--bare", "-b", "main", origin)
+
+	dir := filepath.Join(root, "work")
+	if err := os.MkdirAll(dir, 0o750); err != nil {
+		t.Fatal(err)
+	}
+	initRepo(t, dir)
+	run(t, dir, "remote", "add", "origin", origin)
+	commitFile(t, dir, "a.txt", "hello\n", "chore: init")
+	commitFile(t, dir, "b.txt", "world\n", "feat: add b")
+
+	r, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := r.PendingCommits(context.Background(), "")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(res.Commits) != 2 {
+		t.Fatalf("expected all 2 commits reported as pending, got %d", len(res.Commits))
+	}
+	if res.Baseline != "" {
+		t.Errorf("expected empty baseline when the remote has no branches, got %q", res.Baseline)
+	}
+}
+
+func TestRemoteDefaultBranchViaSymbolicRef(t *testing.T) {
+	dir, _ := pushableRepo(t)
+	// git push -u does not set refs/remotes/origin/HEAD; a real clone would.
+	// Set it explicitly to exercise the symbolic-ref path.
+	run(t, dir, "remote", "set-head", "origin", "main")
+
+	r, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := r.remoteDefaultBranch(context.Background(), "origin"); got != "origin/main" {
+		t.Errorf("remoteDefaultBranch = %q, want %q", got, "origin/main")
+	}
+}
+
+func TestRemoteDefaultBranchFallsBackToMainHeuristic(t *testing.T) {
+	dir, _ := pushableRepo(t) // push -u does not set origin/HEAD
+	r, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := r.remoteDefaultBranch(context.Background(), "origin"); got != "origin/main" {
+		t.Errorf("remoteDefaultBranch = %q, want %q", got, "origin/main")
+	}
+}
+
+func TestRemoteDefaultBranchNoneResolves(t *testing.T) {
+	dir := t.TempDir()
+	initRepo(t, dir)
+	r, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := r.remoteDefaultBranch(context.Background(), "origin"); got != "" {
+		t.Errorf("remoteDefaultBranch = %q, want empty (no remote configured)", got)
+	}
+}
+
 func TestPendingCommitsEmptyRepo(t *testing.T) {
 	dir := t.TempDir()
 	initRepo(t, dir)

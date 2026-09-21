@@ -29,9 +29,12 @@ type PendingResult struct {
 	Commits []Commit
 	// Baseline is the ref the commits were computed as being ahead of: the
 	// configured upstream ("@{upstream}"), a remote-tracking branch (e.g.
-	// "origin/main"), or an explicit since-commit hash. It is empty when the
-	// branch has no push baseline at all — never pushed, or no upstream — in
-	// which case every commit reachable from HEAD is pending.
+	// "origin/main"), the remote's default branch when this branch has never
+	// been pushed under its own name (e.g. a feature branch forked from
+	// "origin/main"), or an explicit since-commit hash. It is empty only
+	// when none of these resolve — the repository has no remote, or nothing
+	// has ever been pushed to it — in which case every commit reachable from
+	// HEAD is pending.
 	Baseline string
 	// Branch is the repository's current branch at query time (or "HEAD"
 	// when detached), so a caller reporting "no upstream configured" can
@@ -45,18 +48,21 @@ type PendingResult struct {
 //
 // By default the baseline is the branch's push target: its configured
 // upstream, or failing that the matching remote-tracking branch (e.g.
-// origin/main). When the branch has no such baseline — it was never pushed,
-// or has no upstream configured — every commit reachable from HEAD is
-// treated as pending and Baseline is empty. This mirrors gitscan's scan
-// semantics, where a real branch with no upstream counts as having unpushed
-// work. A detached HEAD has no branch to push and yields no baseline.
+// origin/main). When the branch has no such baseline — most commonly a
+// freshly created feature branch that has never been pushed under its own
+// name — it falls back to the remote's default branch (e.g. origin/main),
+// so only commits unique to this branch are reported as pending rather than
+// its parent branch's entire history. Only when that also fails to resolve
+// — no remote configured, or nothing has ever been pushed to it — is every
+// commit reachable from HEAD treated as pending, with Baseline empty. A
+// detached HEAD has no branch to compare and yields no baseline.
 //
 // If sinceCommit is non-empty it overrides the baseline entirely
-// ("sinceCommit..HEAD"), regardless of any upstream.
+// ("sinceCommit..HEAD"), regardless of any upstream or default branch.
 func (r *Repo) PendingCommits(ctx context.Context, sinceCommit string) (PendingResult, error) {
 	base := sinceCommit
 	if base == "" {
-		resolved, err := r.pushBaseline(ctx)
+		resolved, err := r.pendingBaseline(ctx)
 		if err != nil {
 			return PendingResult{}, err
 		}
@@ -146,6 +152,55 @@ func (r *Repo) pushBaseline(ctx context.Context) (string, error) {
 		return tracking, nil
 	}
 	return "", nil
+}
+
+// pendingBaseline resolves the baseline for PendingCommits. It tries the
+// branch's own push target first (pushBaseline: the configured upstream, or
+// a same-named remote-tracking branch). Failing that — a branch that has
+// never been pushed under its own name — it falls back to the remote's
+// default branch (e.g. origin/main). Git's two-dot log range
+// ("origin/main..HEAD") already excludes every commit reachable from
+// origin/main by ancestry, which is equivalent to computing the merge-base
+// of the two branches and listing commits after it, without an extra `git
+// merge-base` call.
+func (r *Repo) pendingBaseline(ctx context.Context) (string, error) {
+	base, err := r.pushBaseline(ctx)
+	if err != nil || base != "" {
+		return base, err
+	}
+
+	branch, err := r.currentBranchOrEmpty(ctx)
+	if err != nil {
+		return "", err
+	}
+	if branch == "" || branch == "HEAD" {
+		return "", nil // unborn or detached HEAD: no branch to compare
+	}
+
+	remote := r.branchRemote(ctx, branch)
+	return r.remoteDefaultBranch(ctx, remote), nil
+}
+
+// remoteDefaultBranch returns remote's default branch ref (e.g.
+// "origin/main"), preferring the remote's recorded HEAD
+// (refs/remotes/<remote>/HEAD, set by a full `git clone` or `git remote
+// set-head`) and falling back to "main" then "master" when that is not
+// configured locally — as with a remote added by `git remote add` followed
+// by `git push -u`, which does not set it. Returns "" when none resolve to
+// a commit (e.g. the remote has no branches at all).
+func (r *Repo) remoteDefaultBranch(ctx context.Context, remote string) string {
+	if out, err := r.git(ctx, "symbolic-ref", "--short", "-q", "refs/remotes/"+remote+"/HEAD"); err == nil {
+		if name := strings.TrimSpace(out); name != "" && r.refExists(ctx, name) {
+			return name
+		}
+	}
+	for _, candidate := range []string{"main", "master"} {
+		ref := remote + "/" + candidate
+		if r.refExists(ctx, ref) {
+			return ref
+		}
+	}
+	return ""
 }
 
 // currentBranchOrEmpty returns the current branch (or "HEAD" when detached),
