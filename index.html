@@ -14,7 +14,7 @@
       
       
       
-        <link rel="next" href="releases/v0.10.0/">
+        <link rel="next" href="releases/v0.11.0/">
       
       
         
@@ -329,6 +329,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#gitgrep" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        gitgrep
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#gitscan-cli" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -398,6 +409,34 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="releases/v0.11.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.11.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -724,6 +763,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#gitgrep" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        gitgrep
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#gitscan-cli" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -794,7 +844,33 @@ integrations.</p>
   that was never pushed reports every commit as pending. <code>Repo.PushedCommits</code>
   lists the most recent commits already pushed. <code>Repo.HasUpstream</code> reports
   whether an upstream is configured.</li>
+<li><strong>File &amp; content access</strong> — <code>Repo.LsFiles</code> (tracked and, optionally,
+  untracked files), <code>Repo.StagedFiles</code> (staged additions/modifications),
+  <code>Repo.ShowContent</code> (object content at a git spec, e.g. <code>:path</code> for the
+  staged version), and <code>Repo.LsTree</code> (a revision's full file list).</li>
 </ul>
+<h2 id="gitgrep">gitgrep</h2>
+<p>A policy-free primitive for searching a repository's content and history,
+by shelling out to native git. Callers supply patterns and get matches back;
+<code>gitgrep</code> has no built-in notion of what a match means, so it is a
+general-purpose building block rather than a leak/secret scanner itself.</p>
+<ul>
+<li><strong><code>GrepTree</code></strong> — search the working tree, the index (<code>Staged</code>), or a
+  revision (<code>Rev</code>) for one or more patterns (fixed-string or extended
+  regex, case-insensitive optional).</li>
+<li><strong><code>HistoryPickaxe</code></strong> — find commits whose diff added or removed a pattern
+  (<code>git log -S</code>/<code>-G</code>), attributed to the specific file.</li>
+<li><strong><code>StreamPatches</code></strong> — stream <code>git log -p</code> file diffs with commit/author/
+  date context, for running custom detectors over a single git walk.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="nx">matches</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">gitgrep</span><span class="p">.</span><span class="nx">GrepTree</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span><span class="w"> </span><span class="nx">repoPath</span><span class="p">,</span><span class="w"> </span><span class="nx">gitgrep</span><span class="p">.</span><span class="nx">Options</span><span class="p">{</span>
+<span class="w">    </span><span class="nx">Patterns</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="nx">gitgrep</span><span class="p">.</span><span class="nx">Pattern</span><span class="p">{{</span><span class="nx">Value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Acme Corp&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">IgnoreCase</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">}},</span>
+<span class="p">})</span>
+</code></pre></div>
+<p><code>Match.Text</code> and <code>Patch.Hunk</code> are returned verbatim; redacting them before
+display or logging is the caller's responsibility. See the
+<a href="https://github.com/grokify/gogit/blob/main/docs/gitgrep-design.md">gitgrep design note</a>
+for the full API and caveats.</p>
 <div class="highlight"><pre><span></span><code><span class="nx">repo</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">gogit</span><span class="p">.</span><span class="nx">Open</span><span class="p">(</span><span class="s">&quot;/path/to/repo&quot;</span><span class="p">)</span>
 <span class="nx">commits</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">repo</span><span class="p">.</span><span class="nx">Log</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span><span class="w"> </span><span class="nx">gogit</span><span class="p">.</span><span class="nx">LogOptions</span><span class="p">{</span>
 <span class="w">    </span><span class="nx">Since</span><span class="p">:</span><span class="w">        </span><span class="nx">weekStart</span><span class="p">,</span>
@@ -815,11 +891,13 @@ dependency filters, release ordering, and workflow compliance. The
 <code>pending</code> subcommand reports unpushed commits across one or many
 repositories (sweep several org directories at once), and <code>pushed</code>
 lists the most recent commits already pushed — both as an aligned
-terminal table, copy-pasteable markdown, or JSON for agents.</p>
+terminal table, copy-pasteable markdown, or JSON for agents. <code>grep</code>
+searches a single repository's working tree, staged index, a revision,
+or history for one or more patterns.</p>
 <div class="highlight"><pre><span></span><code>go<span class="w"> </span>install<span class="w"> </span>github.com/grokify/gogit/cmd/gitscan@latest
 </code></pre></div>
 <p>See the <a href="https://github.com/grokify/gogit#readme">README</a> for full CLI
-usage, and <a href="releases/v0.10.0/">Releases</a> for version history.</p>
+usage, and <a href="releases/v0.11.0/">Releases</a> for version history.</p>
 
 
 

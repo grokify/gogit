@@ -10,31 +10,27 @@
       
       
       
-        <link rel="canonical" href="https://grokify.github.io/gogit/releases/v0.5.0/">
+        <link rel="canonical" href="https://grokify.github.io/gogit/gitgrep-design/">
       
       
-        <link rel="prev" href="../v0.6.0/">
-      
-      
-        <link rel="next" href="../v0.4.0/">
       
       
         
       
       
-      <link rel="icon" href="../../assets/images/favicon.png">
+      <link rel="icon" href="../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
-        <title>v0.5.0 - gogit</title>
+        <title>Design Note: gitgrep — git content & history search - gogit</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -53,7 +49,7 @@
       
     
     
-    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -78,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#gogit-v050-release-notes" class="md-skip">
+        <a href="#design-note-gitgrep-git-content-history-search" class="md-skip">
           Skip to content
         </a>
       
@@ -94,7 +90,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="gogit" class="md-header__button md-logo" aria-label="gogit" data-md-component="logo">
+    <a href=".." title="gogit" class="md-header__button md-logo" aria-label="gogit" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -114,7 +110,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              v0.5.0
+              Design Note: gitgrep — git content &amp; history search
             
           </span>
         </div>
@@ -230,7 +226,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="gogit" class="md-nav__button md-logo" aria-label="gogit" data-md-component="logo">
+    <a href=".." title="gogit" class="md-nav__button md-logo" aria-label="gogit" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -260,7 +256,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
+      <a href=".." class="md-nav__link">
         
   
   
@@ -284,8 +280,6 @@
       
   
   
-    
-  
   
   
     
@@ -298,11 +292,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
         
           
           <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
@@ -323,7 +317,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -341,7 +335,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../v0.11.0/" class="md-nav__link">
+      <a href="../releases/v0.11.0/" class="md-nav__link">
         
   
   
@@ -369,7 +363,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../v0.10.0/" class="md-nav__link">
+      <a href="../releases/v0.10.0/" class="md-nav__link">
         
   
   
@@ -397,7 +391,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../v0.9.0/" class="md-nav__link">
+      <a href="../releases/v0.9.0/" class="md-nav__link">
         
   
   
@@ -425,7 +419,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../v0.8.0/" class="md-nav__link">
+      <a href="../releases/v0.8.0/" class="md-nav__link">
         
   
   
@@ -453,7 +447,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../v0.7.0/" class="md-nav__link">
+      <a href="../releases/v0.7.0/" class="md-nav__link">
         
   
   
@@ -481,7 +475,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../v0.6.0/" class="md-nav__link">
+      <a href="../releases/v0.6.0/" class="md-nav__link">
         
   
   
@@ -506,37 +500,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    v0.5.0
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../releases/v0.5.0/" class="md-nav__link">
         
   
   
@@ -552,131 +519,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Overview
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#breaking-changes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Breaking Changes
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#highlights" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Highlights
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Highlights">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#core-git-library-new" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Core git library (new)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#workflow-compliance-scanning-gitscan-cli" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Workflow compliance scanning (gitscan CLI)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#since-unpushed" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        since --unpushed
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#reliability" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Reliability
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#installation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Installation
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#commits" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Commits
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -689,7 +531,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../v0.4.0/" class="md-nav__link">
+      <a href="../releases/v0.4.0/" class="md-nav__link">
         
   
   
@@ -717,7 +559,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../v0.3.0/" class="md-nav__link">
+      <a href="../releases/v0.3.0/" class="md-nav__link">
         
   
   
@@ -745,7 +587,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../v0.2.0/" class="md-nav__link">
+      <a href="../releases/v0.2.0/" class="md-nav__link">
         
   
   
@@ -773,7 +615,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../v0.1.0/" class="md-nav__link">
+      <a href="../releases/v0.1.0/" class="md-nav__link">
         
   
   
@@ -828,10 +670,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#motivation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Overview
+        Motivation
       
     </span>
   </a>
@@ -839,10 +681,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#breaking-changes" class="md-nav__link">
+  <a href="#non-goals" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Breaking Changes
+        Non-goals
       
     </span>
   </a>
@@ -850,44 +692,33 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#highlights" class="md-nav__link">
+  <a href="#why-native-git-not-a-pure-go-git-library" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Highlights
+        Why native git, not a pure-Go git library
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Highlights">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#api-sketch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API sketch
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="API sketch">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#core-git-library-new" class="md-nav__link">
+  <a href="#command-mapping" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Core git library (new)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#workflow-compliance-scanning-gitscan-cli" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Workflow compliance scanning (gitscan CLI)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#since-unpushed" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        since --unpushed
+        Command mapping
       
     </span>
   </a>
@@ -900,10 +731,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#reliability" class="md-nav__link">
+  <a href="#gitscan-cli-surface" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Reliability
+        gitscan CLI surface
       
     </span>
   </a>
@@ -911,10 +742,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#installation" class="md-nav__link">
+  <a href="#caveats" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Installation
+        Caveats
       
     </span>
   </a>
@@ -922,10 +753,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#commits" class="md-nav__link">
+  <a href="#testing" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Commits
+        Testing
       
     </span>
   </a>
@@ -952,77 +783,156 @@
   
 
 
-<h1 id="gogit-v050-release-notes">gogit v0.5.0 Release Notes</h1>
-<p><strong>Release Date:</strong> 2026-07-18</p>
-<h2 id="overview">Overview</h2>
-<p>This release renames the repository from <strong>gitscan</strong> to <strong>gogit</strong> and
-reframes it as a generic, dependency-light Git base library for Go —
-analogous to <a href="https://github.com/grokify/gogithub">gogithub</a> for GitHub —
-with the gitscan CLI preserved unchanged as a bundled tool at
-<code>cmd/gitscan</code>. The new root package provides repository discovery and
-commit-log parsing (including <code>Co-authored-by</code> trailer extraction used for
-AI-attribution analytics in OmniDevX).</p>
-<h2 id="breaking-changes">Breaking Changes</h2>
-<p>The module path changed:</p>
-<div class="highlight"><pre><span></span><code><span class="gd">-import &quot;github.com/grokify/gitscan/scanner&quot;</span>
-<span class="gi">+import &quot;github.com/grokify/gogit/scanner&quot;</span>
-</code></pre></div>
-<p>The CLI entrypoint moved from the repository root to <code>cmd/gitscan</code>:</p>
-<div class="highlight"><pre><span></span><code>go<span class="w"> </span>install<span class="w"> </span>github.com/grokify/gogit/cmd/gitscan@latest
-</code></pre></div>
-<p>GitHub redirects <code>grokify/gitscan</code> URLs to <code>grokify/gogit</code>; update remotes
-and imports at your convenience.</p>
-<p>The <code>--go-git</code> flag is removed from all gitscan subcommands: the git CLI
-backend (already the default) is now the only backend, and the go-git/v5
-dependency tree is dropped from the module — a substantially smaller
-dependency graph for library consumers.</p>
-<h2 id="highlights">Highlights</h2>
-<h3 id="core-git-library-new">Core git library (new)</h3>
+<h1 id="design-note-gitgrep-git-content-history-search">Design Note: <code>gitgrep</code> — git content &amp; history search</h1>
+<p>Status: proposed
+Package: <code>github.com/grokify/gogit/gitgrep</code>
+Audience: gogit maintainers and any library/CLI consumer</p>
+<h2 id="motivation">Motivation</h2>
+<p>gogit already wraps native <code>git</code> for repo enumeration and status
+(<code>scanner</code> package, <code>GitBackend</code>). Consumers increasingly need a fast,
+reusable primitive to <strong>search repository content</strong> — the working tree,
+the index, a specific revision, or history — for one or more patterns.</p>
+<p>Today this is often done ad hoc with <code>grep -iR {term} *</code>, which:</p>
 <ul>
-<li><code>Discover(roots, maxDepth)</code> — depth-bounded repository discovery that
-  does not descend into repositories</li>
-<li><code>Repo.Log(ctx, LogOptions)</code> — commit-log parsing with calendar-date
-  filtering (<code>Since</code>/<code>Until</code>), author/committer identities, subjects,
-  trailers, and <code>--numstat</code> change stats</li>
-<li><code>Commit.CoAuthors()</code> — <code>Co-authored-by</code> trailer extraction</li>
-<li><code>Repo.Branch</code>, <code>Repo.OriginURL</code>, <code>NormalizeRemoteURL</code> — metadata and
-  canonical <code>host/path</code> remote identifiers</li>
-<li><code>Repo.Tags</code>, <code>Repo.TagsWithDates</code> — tag listing with creation dates</li>
+<li>ignores git semantics (searches untracked/ignored files, <code>.git/</code>, build
+  artifacts),</li>
+<li>cannot search prior history, and</li>
+<li>has no structured (machine-readable) output.</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="nx">repo</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">gogit</span><span class="p">.</span><span class="nx">Open</span><span class="p">(</span><span class="s">&quot;/path/to/repo&quot;</span><span class="p">)</span>
-<span class="nx">commits</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">repo</span><span class="p">.</span><span class="nx">Log</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span><span class="w"> </span><span class="nx">gogit</span><span class="p">.</span><span class="nx">LogOptions</span><span class="p">{</span>
-<span class="w">    </span><span class="nx">Since</span><span class="p">:</span><span class="w">        </span><span class="nx">weekStart</span><span class="p">,</span>
-<span class="w">    </span><span class="nx">IncludeStats</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-<span class="p">})</span>
-<span class="k">for</span><span class="w"> </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">c</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">range</span><span class="w"> </span><span class="nx">commits</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">Hash</span><span class="p">,</span><span class="w"> </span><span class="nx">c</span><span class="p">.</span><span class="nx">Author</span><span class="p">.</span><span class="nx">Email</span><span class="p">,</span><span class="w"> </span><span class="nx">c</span><span class="p">.</span><span class="nx">CoAuthors</span><span class="p">(),</span><span class="w"> </span><span class="nx">c</span><span class="p">.</span><span class="nx">Insertions</span><span class="p">)</span>
+<p><code>gitgrep</code> provides a small, policy-free API around the git commands that
+are purpose-built and fast for this: <code>git grep</code>, the pickaxe
+(<code>git log -S/-G</code>), and streamed patches (<code>git log -p</code>).</p>
+<p><code>gitgrep</code> is deliberately <strong>generic and free of any domain policy</strong>: it
+takes patterns in and returns matches out. It defines no term lists, no
+severities, and no notion of what a match "means." Callers own that.</p>
+<h2 id="non-goals">Non-goals</h2>
+<ul>
+<li>No opinion on what patterns are "bad" (no built-in term lists).</li>
+<li>No redaction. <code>Match.Text</code> is returned raw; callers that display or log
+  matches are responsible for any masking.</li>
+<li>No pure-Go git reimplementation. gogit's established approach is to shell
+  out to native <code>git</code> (see <code>scanner/git_cli.go</code>), which is the fastest and
+  most portable option. <code>gitgrep</code> follows the same approach and inherits the
+  same one requirement: <code>git</code> must be on <code>PATH</code>.</li>
+</ul>
+<h2 id="why-native-git-not-a-pure-go-git-library">Why native <code>git</code>, not a pure-Go git library</h2>
+<p>Native <code>git</code> is the reference implementation and is consistently faster and
+lighter than pure-Go git libraries for history walks (it owns packfile
+mmap/delta handling). This matches gogit's existing <code>CLIGitBackend</code>
+approach. All <code>gitgrep</code> operations spawn <code>git</code> with the same hardening
+already used in gogit: <code>LC_ALL=C</code> and <code>GIT_TERMINAL_PROMPT=0</code>.</p>
+<h2 id="api-sketch">API sketch</h2>
+<div class="highlight"><pre><span></span><code><span class="kn">package</span><span class="w"> </span><span class="nx">gitgrep</span>
+
+<span class="c1">// Pattern is a single search term.</span>
+<span class="kd">type</span><span class="w"> </span><span class="nx">Pattern</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">Value</span><span class="w">      </span><span class="kt">string</span><span class="w"> </span><span class="c1">// literal or regex per Regex</span>
+<span class="w">    </span><span class="nx">Regex</span><span class="w">      </span><span class="kt">bool</span><span class="w">   </span><span class="c1">// true → -E (POSIX ERE); false → -F (fixed string)</span>
+<span class="w">    </span><span class="nx">IgnoreCase</span><span class="w"> </span><span class="kt">bool</span><span class="w">   </span><span class="c1">// -i</span>
 <span class="p">}</span>
+
+<span class="c1">// Options configures a search.</span>
+<span class="kd">type</span><span class="w"> </span><span class="nx">Options</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">Patterns</span><span class="w">   </span><span class="p">[]</span><span class="nx">Pattern</span><span class="w"> </span><span class="c1">// OR-combined (git grep -e … -e …)</span>
+<span class="w">    </span><span class="nx">Pathspecs</span><span class="w">  </span><span class="p">[]</span><span class="kt">string</span><span class="w">  </span><span class="c1">// optional path limits (git pathspecs)</span>
+<span class="w">    </span><span class="nx">SkipBinary</span><span class="w"> </span><span class="kt">bool</span><span class="w">      </span><span class="c1">// -I (recommended true)</span>
+
+<span class="w">    </span><span class="c1">// Scope (mutually exclusive selectors for GrepTree):</span>
+<span class="w">    </span><span class="nx">Rev</span><span class="w">    </span><span class="kt">string</span><span class="w"> </span><span class="c1">// &quot;&quot; = working tree; else a commit/tree-ish</span>
+<span class="w">    </span><span class="nx">Staged</span><span class="w"> </span><span class="kt">bool</span><span class="w">   </span><span class="c1">// --cached (search the index)</span>
+<span class="p">}</span>
+
+<span class="c1">// Match is one matching line.</span>
+<span class="kd">type</span><span class="w"> </span><span class="nx">Match</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">Rev</span><span class="w">  </span><span class="kt">string</span><span class="w"> </span><span class="c1">// commit SHA, or &quot;&quot; for working tree</span>
+<span class="w">    </span><span class="nx">Path</span><span class="w"> </span><span class="kt">string</span>
+<span class="w">    </span><span class="nx">Line</span><span class="w"> </span><span class="kt">int</span>
+<span class="w">    </span><span class="nx">Text</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="c1">// raw matched line — caller must redact if needed</span>
+<span class="p">}</span>
+
+<span class="c1">// HistoryMatch is a commit whose diff added/removed a pattern.</span>
+<span class="kd">type</span><span class="w"> </span><span class="nx">HistoryMatch</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">Commit</span><span class="w">  </span><span class="kt">string</span>
+<span class="w">    </span><span class="nx">Author</span><span class="w">  </span><span class="kt">string</span>
+<span class="w">    </span><span class="nx">Date</span><span class="w">    </span><span class="kt">string</span>
+<span class="w">    </span><span class="nx">Path</span><span class="w">    </span><span class="kt">string</span>
+<span class="w">    </span><span class="nx">Pattern</span><span class="w"> </span><span class="kt">string</span>
+<span class="p">}</span>
+
+<span class="c1">// Patch is one streamed diff hunk with commit context.</span>
+<span class="kd">type</span><span class="w"> </span><span class="nx">Patch</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">Commit</span><span class="w">  </span><span class="kt">string</span>
+<span class="w">    </span><span class="nx">Author</span><span class="w">  </span><span class="kt">string</span>
+<span class="w">    </span><span class="nx">Date</span><span class="w">    </span><span class="kt">string</span>
+<span class="w">    </span><span class="nx">Path</span><span class="w">    </span><span class="kt">string</span>
+<span class="w">    </span><span class="nx">Hunk</span><span class="w">    </span><span class="kt">string</span><span class="w"> </span><span class="c1">// raw added/removed lines for this file in this commit</span>
+<span class="p">}</span>
+
+<span class="c1">// GrepTree searches the working tree, index, or a single revision</span>
+<span class="c1">// (git grep). Fast; only tracked content at the chosen tree.</span>
+<span class="kd">func</span><span class="w"> </span><span class="nx">GrepTree</span><span class="p">(</span><span class="nx">repoPath</span><span class="w"> </span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="nx">opts</span><span class="w"> </span><span class="nx">Options</span><span class="p">)</span><span class="w"> </span><span class="p">([]</span><span class="nx">Match</span><span class="p">,</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span>
+
+<span class="c1">// HistoryPickaxe finds commits whose diff adds/removes any pattern</span>
+<span class="c1">// (git log -p -S&lt;str&gt; or -G&lt;regex&gt;). Efficient &quot;when was it introduced&quot;.</span>
+<span class="kd">func</span><span class="w"> </span><span class="nx">HistoryPickaxe</span><span class="p">(</span><span class="nx">repoPath</span><span class="w"> </span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="nx">opts</span><span class="w"> </span><span class="nx">Options</span><span class="p">)</span><span class="w"> </span><span class="p">([]</span><span class="nx">HistoryMatch</span><span class="p">,</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span>
+
+<span class="c1">// StreamPatches streams `git log -p [rng]` hunks to fn, so callers can run</span>
+<span class="c1">// arbitrary detectors over diff text with commit/file context. rng may be a</span>
+<span class="c1">// range (&quot;base..head&quot;), &quot;--all&quot;, or &quot;&quot; (default log). Returning a non-nil</span>
+<span class="c1">// error from fn stops the walk and is returned to the caller.</span>
+<span class="kd">func</span><span class="w"> </span><span class="nx">StreamPatches</span><span class="p">(</span><span class="nx">repoPath</span><span class="p">,</span><span class="w"> </span><span class="nx">rng</span><span class="w"> </span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="nx">fn</span><span class="w"> </span><span class="kd">func</span><span class="p">(</span><span class="nx">Patch</span><span class="p">)</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span><span class="w"> </span><span class="kt">error</span>
 </code></pre></div>
-<h3 id="workflow-compliance-scanning-gitscan-cli">Workflow compliance scanning (gitscan CLI)</h3>
-<p>Scan repositories for GitHub workflow compliance against a reference
-repository (default <code>plexusone/.github</code>) via <code>--check-workflows</code> and
-<code>--ref-repo</code>.</p>
-<h3 id="since-unpushed">since --unpushed</h3>
-<p><code>gitscan since &lt;duration&gt; --unpushed</code> filters repositories with
-uncommitted or unpushed changes (AND logic with existing filters).</p>
-<h2 id="reliability">Reliability</h2>
+<h3 id="command-mapping">Command mapping</h3>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>git command</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GrepTree</code></td>
+<td><code>git grep -I -n -E/-F [-i] -e P … [--cached] [&lt;rev&gt;] [-- &lt;paths&gt;]</code></td>
+</tr>
+<tr>
+<td><code>HistoryPickaxe</code></td>
+<td><code>git log -p -S&lt;str&gt;</code> or <code>git log -p -G&lt;regex&gt;</code></td>
+</tr>
+<tr>
+<td><code>StreamPatches</code></td>
+<td><code>git log -p [--all] [&lt;range&gt;]</code> (streamed, parsed to <code>Patch</code>)</td>
+</tr>
+</tbody>
+</table>
+<p><code>StreamPatches</code> is the general engine: one walk, caller-supplied detection.</p>
+<h2 id="gitscan-cli-surface">gitscan CLI surface</h2>
+<p>Extends the existing <code>gitscan</code> CLI with a <code>grep</code> subcommand:</p>
+<div class="highlight"><pre><span></span><code>gitscan grep -e ACME -e &quot;Acme Corp&quot; --ignore-case ./   # working tree, tracked files
+gitscan grep --staged -e ACME                          # index
+gitscan grep --rev HEAD~5 -e ACME                      # a specific revision
+gitscan grep --history -S &quot;Acme Corp&quot;                  # pickaxe: which commit introduced it
+gitscan grep --json ...                                # machine-readable output
+</code></pre></div>
+<h2 id="caveats">Caveats</h2>
 <ul>
-<li>git execution is pinned to <code>LC_ALL=C</code> with <code>GIT_TERMINAL_PROMPT=0</code>, so
-  error-condition detection is locale-independent and no invocation can
-  hang on a credential prompt.</li>
-<li>Commit-log records use a leading sentinel delimiter, making trailer and
-  numstat parsing unambiguous.</li>
+<li><strong>Tracked content only</strong> at a given tree. <code>git grep</code> on the working tree
+  covers unstaged edits to <em>tracked</em> files but not brand-new untracked
+  files; callers needing those must add a filesystem pass.</li>
+<li><strong>Exhaustive full-history grep</strong> (<code>git grep $(git rev-list --all)</code>) is
+  O(all blobs) and expensive on large repos. Prefer <code>HistoryPickaxe</code> or
+  <code>StreamPatches</code>; gate any exhaustive mode behind an explicit flag.</li>
+<li><strong>Regex dialect:</strong> pin <code>-E</code> (POSIX ERE). Do not assume PCRE
+  (<code>--perl-regexp</code> is not always compiled in).</li>
+<li><strong>Binary files:</strong> default <code>SkipBinary</code> (<code>-I</code>) true.</li>
+<li><strong>Raw output:</strong> <code>Match.Text</code> / <code>Patch.Hunk</code> may contain the very content
+  a caller was searching for. gogit returns it raw by design; redaction is
+  the caller's responsibility.</li>
 </ul>
-<h2 id="installation">Installation</h2>
-<p>Library:</p>
-<div class="highlight"><pre><span></span><code>go<span class="w"> </span>get<span class="w"> </span>github.com/grokify/gogit@v0.5.0
-</code></pre></div>
-<p>CLI:</p>
-<div class="highlight"><pre><span></span><code>go<span class="w"> </span>install<span class="w"> </span>github.com/grokify/gogit/cmd/gitscan@v0.5.0
-</code></pre></div>
-<h2 id="commits">Commits</h2>
-<p>See <a href="../../CHANGELOG.md">CHANGELOG.md</a> for the full categorized list with
-commit links.</p>
+<h2 id="testing">Testing</h2>
+<p>Follow gogit's existing pattern: table tests that construct temporary git
+repos, commit fixtures, and assert on matches. Use synthetic placeholder
+terms (e.g. <code>Acme Corp</code>, <code>ExampleCo</code>) in fixtures.</p>
 
 
 
@@ -1078,10 +988,10 @@ commit links.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.top", "search.highlight", "content.code.copy"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.top", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>
