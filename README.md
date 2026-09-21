@@ -69,10 +69,38 @@ for _, c := range commits {
 | Metadata | `Repo.Branch`, `Repo.OriginURL` | Branch name and remote URL |
 | Remote normalization | `NormalizeRemoteURL(url)` | Canonical `host/path` identifiers |
 | Tags | `Repo.Tags`, `Repo.TagsWithDates` | Tag listing with creation dates |
-| Pending commits | `Repo.PendingCommits(ctx, sinceCommit)` | Commits ahead of upstream, or after an explicit commit hash |
+| Pending commits | `Repo.PendingCommits(ctx, sinceCommit)` | Commits ahead of upstream, or after an explicit commit hash; result carries the current branch |
 | Upstream check | `Repo.HasUpstream(ctx)` | Whether the current branch has an upstream configured |
+| File listing | `Repo.LsFiles(ctx, includeUntracked)` | Tracked files, optionally plus untracked/non-ignored files |
+| Staged files | `Repo.StagedFiles(ctx)` | Files with staged additions/modifications |
+| Object content | `Repo.ShowContent(ctx, spec)` | Content at a git spec (e.g. `:path` for the staged version) |
+| Revision tree | `Repo.LsTree(ctx, rev)` | Full file list at a revision |
+| Content search | `gitgrep.GrepTree(ctx, repoPath, opts)` | Search the working tree, index, or a revision for patterns |
+| History search | `gitgrep.HistoryPickaxe(ctx, repoPath, opts)` | Commits whose diff added/removed a pattern (`git log -S`/`-G`) |
+| Patch streaming | `gitgrep.StreamPatches(ctx, repoPath, rng, fn)` | Stream `git log -p` diffs with commit context, for custom detectors |
 
 Renamed from `gitscan` (the CLI lives on at `cmd/gitscan`).
+
+### gitgrep Package
+
+`github.com/grokify/gogit/gitgrep` is a policy-free primitive for searching
+a repository's content and history: callers supply patterns and get matches
+back, with no built-in notion of what a match means, so it's a
+general-purpose building block rather than a leak/secret scanner itself. It
+shells out to native git (`git grep`, the pickaxe, and streamed `git log -p`
+patches) — the fastest and most portable approach.
+
+```go
+matches, err := gitgrep.GrepTree(ctx, repoPath, gitgrep.Options{
+    Patterns: []gitgrep.Pattern{{Value: "Acme Corp", IgnoreCase: true}},
+})
+```
+
+`Match.Text` and `Patch.Hunk` are returned verbatim; redacting them before
+display or logging is the caller's responsibility. See the
+[gitgrep design note](docs/gitgrep-design.md) for the full API, git-command
+mapping, and caveats (tracked-content-only, exhaustive-history cost, regex
+dialect).
 
 ## gitscan CLI
 
@@ -110,6 +138,7 @@ gitscan dep <module> [dir]       # Filter by dependency
 gitscan order [dir]              # Show repos in dependency order
 gitscan pending [path...]        # List unpushed commits, across one or many repos
 gitscan pushed [count] [dir]     # List the most recent pushed commits
+gitscan grep -e <pattern> [dir]  # Search content or history for one or more patterns
 ```
 
 The scan directory is a positional argument that defaults to the current
@@ -219,7 +248,7 @@ Each `path` is either a git repository (reported directly) or a directory whose 
 | `--tz` | | `original` | Timestamp timezone: `original` (as recorded by git, per-commit), `local` (this machine's timezone), or `utc` |
 | `--depth` | | `1` | How many directory levels below each path to search for repositories |
 
-By default the baseline for "pending" is each branch's push target — its configured upstream, or the matching remote-tracking branch (e.g. `origin/main`). A branch that was **never pushed** has no such target, so *all* of its commits are reported as pending (rather than erroring). Use `--since-commit` to list commits after a specific hash instead; that applies to a single repository only.
+By default the baseline for "pending" is each branch's push target — its configured upstream, or the matching remote-tracking branch (e.g. `origin/main`). A branch that has **never been pushed under its own name** — the common case right after `git checkout -b` — falls back to the remote's default branch (e.g. `origin/main`), so only commits unique to the branch are reported rather than its parent branch's entire history. Only when the remote has no default branch to fall back to (nothing has ever been pushed to it) are *all* local commits reported as pending. Use `--since-commit` to list commits after a specific hash instead; that applies to a single repository only.
 
 The output shape is invariant in the number of repositories: a single repo is just a fleet of one. In a multi-repo sweep, repositories with nothing pending are omitted from the table/markdown views (the summary still counts them), and progress is shown on stderr so stdout stays clean for piping and JSON.
 
@@ -255,14 +284,14 @@ gitscan pending --tz utc
 Table format (default; aligned columns via `text/tabwriter`, meant to be read directly in a terminal). A multi-repo sweep prints one section per repo with pending work, then a summary:
 
 ```
-Repo: /Users/me/go/src/github.com/myorg/service-a
+Repo: /Users/me/go/src/github.com/myorg/service-a (branch: main)
 Pending commits (not yet pushed to @{upstream}): 2
 
 #  HASH     DAY  TIMESTAMP                  MESSAGE
 1  1fbde76  Mon  2026-09-07T12:16:02-07:00  feat: add b
 2  af0101e  Mon  2026-09-07T12:16:05-07:00  feat: add c
 
-Repo: /Users/me/go/src/github.com/myorg/service-b
+Repo: /Users/me/go/src/github.com/myorg/service-b (branch: feat/new-thing)
 Pending commits (no upstream configured; all local commits unpushed): 1
 
 #  HASH     DAY  TIMESTAMP                  MESSAGE
@@ -270,6 +299,10 @@ Pending commits (no upstream configured; all local commits unpushed): 1
 
 Summary: 42 repos scanned, 2 with unpushed commits, 3 commits total
 ```
+
+The header always names the current branch, since "no upstream configured"
+on a fresh feature branch is easy to misread as unpushed work on `main`
+without it.
 
 Markdown format (`--format markdown`; valid GitHub-flavored markdown, e.g. for pasting into a PR description or issue):
 
@@ -287,6 +320,7 @@ JSON format (`--format json`) is always a `repos` array plus a `summary`, whethe
   "repos": [
     {
       "repo": "/Users/me/go/src/github.com/myorg/service-a",
+      "branch": "main",
       "mode": "unpushed",
       "ref": "@{upstream}",
       "count": 2,
@@ -310,7 +344,7 @@ JSON format (`--format json`) is always a `repos` array plus a `summary`, whethe
 }
 ```
 
-The `mode` field is one of `unpushed` (ahead of the push baseline in `ref`), `unpushed-all` (no push target — every local commit is pending), or `since-commit` (commits after the `ref` hash).
+The `mode` field is one of `unpushed` (ahead of the push baseline in `ref` — the branch's own push target, or the remote's default branch as a fallback), `unpushed-all` (no baseline resolved at all — every local commit is pending), or `since-commit` (commits after the `ref` hash).
 
 ## Pushed Subcommand
 
@@ -346,7 +380,7 @@ gitscan pushed --format json
 ### Pushed Output
 
 ```
-Repo: /Users/me/go/src/github.com/me/repo
+Repo: /Users/me/go/src/github.com/me/repo (branch: main)
 Pushed commits (most recent first, from @{upstream}): 3
 
 #  HASH     DAY  TIMESTAMP                  MESSAGE
@@ -356,6 +390,46 @@ Pushed commits (most recent first, from @{upstream}): 3
 ```
 
 `pushed` shares `pending`'s `markdown` and `json` formats (the same invariant `repos` + `summary` envelope, with `mode` set to `pushed`).
+
+## Grep Subcommand
+
+Search a single repository's content or history for one or more patterns, backed by the [`gitgrep`](#gitgrep-package) package.
+
+```bash
+gitscan grep -e <pattern> [-e <pattern>...] [directory]
+```
+
+By default the working tree is searched (tracked files). `directory` defaults to the current directory and must be a git repository.
+
+| Flag | Short | Default | Description |
+|------|-------|---------|-------------|
+| `--pattern` | `-e` | (required) | Search pattern (repeatable) |
+| `--path` | | (none) | Limit to path (repeatable) |
+| `--ignore-case` | `-i` | `false` | Case-insensitive matching |
+| `--regex` | `-E` | `false` | Treat patterns as extended regexes |
+| `--staged` | | `false` | Search the index instead of the working tree |
+| `--rev` | | (none) | Search a specific revision instead of the working tree |
+| `--history` | | `false` | Search history via pickaxe (commits that changed a pattern) |
+| `--json` | | `false` | Output JSON |
+
+### Grep Examples
+
+```bash
+# Working tree, case-insensitive
+gitscan grep -e "Acme Corp" -i ./
+
+# Staged (index) content — a pre-commit surface
+gitscan grep -e ExampleCo --staged
+
+# Extended regex
+gitscan grep -e "SECRET-[0-9]+" -E
+
+# Which commit introduced a term
+gitscan grep -e "Acme Corp" --history
+
+# Machine-readable output for agents
+gitscan grep -e ACME --json
+```
 
 ## Order Subcommand
 

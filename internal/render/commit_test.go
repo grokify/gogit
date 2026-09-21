@@ -113,6 +113,7 @@ func TestPendingMarkdownEscapesPipe(t *testing.T) {
 type commitEnvelope struct {
 	Repos []struct {
 		Repo    string `json:"repo"`
+		Branch  string `json:"branch"`
 		Mode    string `json:"mode"`
 		Ref     string `json:"ref"`
 		Count   int    `json:"count"`
@@ -174,6 +175,51 @@ func TestPendingJSON(t *testing.T) {
 	}
 	if first.Message != "feat: add a | pipe" {
 		t.Errorf("JSON message must not be escaped, got %q", first.Message)
+	}
+}
+
+func TestCommitHeaderIncludesBranch(t *testing.T) {
+	report := testReport()
+	report.Branch = "feat/gitgrep"
+
+	var buf bytes.Buffer
+	if err := Commits(&buf, "table", one(report)); err != nil {
+		t.Fatal(err)
+	}
+	out := buf.String()
+	if !strings.Contains(out, "Repo: /repo (branch: feat/gitgrep)") {
+		t.Errorf("expected branch in header, got: %s", out)
+	}
+}
+
+func TestCommitHeaderOmitsBranchWhenEmpty(t *testing.T) {
+	var buf bytes.Buffer
+	if err := Commits(&buf, "table", one(testReport())); err != nil {
+		t.Fatal(err)
+	}
+	out := buf.String()
+	if strings.Contains(out, "(branch:") {
+		t.Errorf("expected no branch annotation when Branch is empty, got: %s", out)
+	}
+	if !strings.Contains(out, "Repo: /repo\n") {
+		t.Errorf("expected plain repo header when Branch is empty, got: %s", out)
+	}
+}
+
+func TestCommitJSONIncludesBranch(t *testing.T) {
+	report := testReport()
+	report.Branch = "main"
+
+	var buf bytes.Buffer
+	if err := Commits(&buf, "json", one(report)); err != nil {
+		t.Fatal(err)
+	}
+	var decoded commitEnvelope
+	if err := json.Unmarshal(buf.Bytes(), &decoded); err != nil {
+		t.Fatalf("output is not valid JSON: %v\n%s", err, buf.String())
+	}
+	if len(decoded.Repos) != 1 || decoded.Repos[0].Branch != "main" {
+		t.Errorf("expected branch %q in JSON envelope, got: %+v", "main", decoded.Repos)
 	}
 }
 
