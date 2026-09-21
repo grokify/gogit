@@ -71,8 +71,36 @@ for _, c := range commits {
 | Tags | `Repo.Tags`, `Repo.TagsWithDates` | Tag listing with creation dates |
 | Pending commits | `Repo.PendingCommits(ctx, sinceCommit)` | Commits ahead of upstream, or after an explicit commit hash |
 | Upstream check | `Repo.HasUpstream(ctx)` | Whether the current branch has an upstream configured |
+| File listing | `Repo.LsFiles(ctx, includeUntracked)` | Tracked files, optionally plus untracked/non-ignored files |
+| Staged files | `Repo.StagedFiles(ctx)` | Files with staged additions/modifications |
+| Object content | `Repo.ShowContent(ctx, spec)` | Content at a git spec (e.g. `:path` for the staged version) |
+| Revision tree | `Repo.LsTree(ctx, rev)` | Full file list at a revision |
+| Content search | `gitgrep.GrepTree(ctx, repoPath, opts)` | Search the working tree, index, or a revision for patterns |
+| History search | `gitgrep.HistoryPickaxe(ctx, repoPath, opts)` | Commits whose diff added/removed a pattern (`git log -S`/`-G`) |
+| Patch streaming | `gitgrep.StreamPatches(ctx, repoPath, rng, fn)` | Stream `git log -p` diffs with commit context, for custom detectors |
 
 Renamed from `gitscan` (the CLI lives on at `cmd/gitscan`).
+
+### gitgrep Package
+
+`github.com/grokify/gogit/gitgrep` is a policy-free primitive for searching
+a repository's content and history: callers supply patterns and get matches
+back, with no built-in notion of what a match means, so it's a
+general-purpose building block rather than a leak/secret scanner itself. It
+shells out to native git (`git grep`, the pickaxe, and streamed `git log -p`
+patches) — the fastest and most portable approach.
+
+```go
+matches, err := gitgrep.GrepTree(ctx, repoPath, gitgrep.Options{
+    Patterns: []gitgrep.Pattern{{Value: "Acme Corp", IgnoreCase: true}},
+})
+```
+
+`Match.Text` and `Patch.Hunk` are returned verbatim; redacting them before
+display or logging is the caller's responsibility. See the
+[gitgrep design note](docs/gitgrep-design.md) for the full API, git-command
+mapping, and caveats (tracked-content-only, exhaustive-history cost, regex
+dialect).
 
 ## gitscan CLI
 
@@ -110,6 +138,7 @@ gitscan dep <module> [dir]       # Filter by dependency
 gitscan order [dir]              # Show repos in dependency order
 gitscan pending [path...]        # List unpushed commits, across one or many repos
 gitscan pushed [count] [dir]     # List the most recent pushed commits
+gitscan grep -e <pattern> [dir]  # Search content or history for one or more patterns
 ```
 
 The scan directory is a positional argument that defaults to the current
@@ -356,6 +385,46 @@ Pushed commits (most recent first, from @{upstream}): 3
 ```
 
 `pushed` shares `pending`'s `markdown` and `json` formats (the same invariant `repos` + `summary` envelope, with `mode` set to `pushed`).
+
+## Grep Subcommand
+
+Search a single repository's content or history for one or more patterns, backed by the [`gitgrep`](#gitgrep-package) package.
+
+```bash
+gitscan grep -e <pattern> [-e <pattern>...] [directory]
+```
+
+By default the working tree is searched (tracked files). `directory` defaults to the current directory and must be a git repository.
+
+| Flag | Short | Default | Description |
+|------|-------|---------|-------------|
+| `--pattern` | `-e` | (required) | Search pattern (repeatable) |
+| `--path` | | (none) | Limit to path (repeatable) |
+| `--ignore-case` | `-i` | `false` | Case-insensitive matching |
+| `--regex` | `-E` | `false` | Treat patterns as extended regexes |
+| `--staged` | | `false` | Search the index instead of the working tree |
+| `--rev` | | (none) | Search a specific revision instead of the working tree |
+| `--history` | | `false` | Search history via pickaxe (commits that changed a pattern) |
+| `--json` | | `false` | Output JSON |
+
+### Grep Examples
+
+```bash
+# Working tree, case-insensitive
+gitscan grep -e "Acme Corp" -i ./
+
+# Staged (index) content — a pre-commit surface
+gitscan grep -e ExampleCo --staged
+
+# Extended regex
+gitscan grep -e "SECRET-[0-9]+" -E
+
+# Which commit introduced a term
+gitscan grep -e "Acme Corp" --history
+
+# Machine-readable output for agents
+gitscan grep -e ACME --json
+```
 
 ## Order Subcommand
 
