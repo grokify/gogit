@@ -839,11 +839,16 @@ integrations.</p>
 <li><strong>Metadata</strong> — <code>Repo.Branch</code>, <code>Repo.OriginURL</code>, <code>NormalizeRemoteURL</code>
   (canonical <code>host/path</code> identifiers), <code>Repo.Tags</code>, <code>Repo.TagsWithDates</code>.</li>
 <li><strong>Pending &amp; pushed commits</strong> — <code>Repo.PendingCommits</code> lists commits ahead of
-  the branch's push target (its upstream, or the matching remote-tracking
-  branch such as <code>origin/main</code>), or after an explicit commit hash; a branch
-  that was never pushed reports every commit as pending. <code>Repo.PushedCommits</code>
-  lists the most recent commits already pushed. <code>Repo.HasUpstream</code> reports
-  whether an upstream is configured.</li>
+  the branch's push target: its upstream, the matching remote-tracking
+  branch (e.g. <code>origin/main</code>), or — for a branch never pushed under its own
+  name — the remote's default branch, so only commits unique to the branch
+  are reported. Only when none of these resolve is every commit reachable
+  from <code>HEAD</code> reported as pending. <code>Repo.PushedCommits</code> lists the most
+  recent commits already pushed (unaffected by the default-branch
+  fallback, since it reports what this branch itself has pushed). Both
+  results carry the current branch name (<code>Branch</code>), so a caller reporting
+  "no upstream" also knows which branch that refers to. <code>Repo.HasUpstream</code>
+  reports whether an upstream is configured.</li>
 <li><strong>File &amp; content access</strong> — <code>Repo.LsFiles</code> (tracked and, optionally,
   untracked files), <code>Repo.StagedFiles</code> (staged additions/modifications),
   <code>Repo.ShowContent</code> (object content at a git spec, e.g. <code>:path</code> for the

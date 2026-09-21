@@ -456,6 +456,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#pendingpushed-now-show-the-current-branch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pending/pushed now show the current branch
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pending-falls-back-to-the-remotes-default-branch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pending falls back to the remote's default branch
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -850,6 +872,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#pendingpushed-now-show-the-current-branch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pending/pushed now show the current branch
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pending-falls-back-to-the-remotes-default-branch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pending falls back to the remote's default branch
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -933,6 +977,33 @@ enumerate tracked/untracked files, staged changes, and a revision's tree, and
 read object content at a git spec (e.g. <code>:path</code> for the staged version of a
 file, <code>&lt;rev&gt;:path</code> for a file at a revision) — the building blocks behind
 <code>gitgrep</code> and available directly to library consumers.</p>
+<h3 id="pendingpushed-now-show-the-current-branch"><code>pending</code>/<code>pushed</code> now show the current branch</h3>
+<p><code>gitscan pending</code>/<code>pushed</code> reported "no upstream configured; all local
+commits unpushed" without saying which branch that referred to — easy to
+misread as unpushed work on the repo's default branch when it was actually a
+fresh feature branch. The repo header now includes it
+(<code>Repo: &lt;path&gt; (branch: &lt;name&gt;)</code>), and JSON output gains a <code>branch</code> field.
+<code>Repo.PendingCommits</code> and <code>Repo.PushedCommits</code> expose it as
+<code>PendingResult.Branch</code> / <code>PushedResult.Branch</code>.</p>
+<h3 id="pending-falls-back-to-the-remotes-default-branch"><code>pending</code> falls back to the remote's default branch</h3>
+<p>A branch that has never been pushed under its own name — the common case
+right after <code>git checkout -b</code> — previously had no push baseline at all, so
+<code>gitscan pending</code> reported every commit reachable from <code>HEAD</code> as pending,
+including the entire history inherited from its parent branch. It now falls
+back to the remote's default branch (e.g. <code>origin/main</code>) when there is no
+upstream and no same-named remote-tracking branch, so only the commits
+unique to this branch are reported:</p>
+<div class="highlight"><pre><span></span><code>Repo: /path/to/repo (branch: feat/x)
+Pending commits (not yet pushed to origin/main): 2
+</code></pre></div>
+<p>The default branch is resolved via the remote's recorded <code>HEAD</code>
+(<code>refs/remotes/&lt;remote&gt;/HEAD</code>, set by a full clone or <code>git remote
+set-head</code>) or, failing that, by checking for <code>main</code> then <code>master</code>, since
+<code>git push -u</code> does not set the symbolic <code>HEAD</code> ref locally. <code>Repo.
+PushedCommits</code> is intentionally unchanged: it reports commits pushed under
+this branch's own identity, and inheriting <code>origin/main</code>'s history there
+would misrepresent commits as "pushed" that this branch never pushed
+itself.</p>
 <h2 id="installation">Installation</h2>
 <div class="highlight"><pre><span></span><code>go<span class="w"> </span>install<span class="w"> </span>github.com/grokify/gogit/cmd/gitscan@v0.11.0
 </code></pre></div>
