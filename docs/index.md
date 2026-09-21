@@ -35,13 +35,16 @@ integrations.
 - **Metadata** — `Repo.Branch`, `Repo.OriginURL`, `NormalizeRemoteURL`
   (canonical `host/path` identifiers), `Repo.Tags`, `Repo.TagsWithDates`.
 - **Pending & pushed commits** — `Repo.PendingCommits` lists commits ahead of
-  the branch's push target (its upstream, or the matching remote-tracking
-  branch such as `origin/main`), or after an explicit commit hash; a branch
-  that was never pushed reports every commit as pending. `Repo.PushedCommits`
-  lists the most recent commits already pushed. Both results carry the
-  current branch name (`Branch`), so a caller reporting "no upstream" also
-  knows which branch that refers to. `Repo.HasUpstream` reports whether an
-  upstream is configured.
+  the branch's push target: its upstream, the matching remote-tracking
+  branch (e.g. `origin/main`), or — for a branch never pushed under its own
+  name — the remote's default branch, so only commits unique to the branch
+  are reported. Only when none of these resolve is every commit reachable
+  from `HEAD` reported as pending. `Repo.PushedCommits` lists the most
+  recent commits already pushed (unaffected by the default-branch
+  fallback, since it reports what this branch itself has pushed). Both
+  results carry the current branch name (`Branch`), so a caller reporting
+  "no upstream" also knows which branch that refers to. `Repo.HasUpstream`
+  reports whether an upstream is configured.
 - **File & content access** — `Repo.LsFiles` (tracked and, optionally,
   untracked files), `Repo.StagedFiles` (staged additions/modifications),
   `Repo.ShowContent` (object content at a git spec, e.g. `:path` for the

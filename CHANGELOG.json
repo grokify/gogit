@@ -64,6 +64,12 @@
           "description": "github.com/grokify/mogo bumped 0.74.8 → 0.74.9",
           "commit": "53502a2"
         }
+      ],
+      "changed": [
+        {
+          "description": "`Repo.PendingCommits` now falls back to the remote's default branch (e.g. `origin/main`) when there is no upstream and no same-named remote-tracking branch, so a freshly checked-out feature branch reports only its own unique commits instead of its parent branch's entire history",
+          "commit": "438763b"
+        }
       ]
     },
     {

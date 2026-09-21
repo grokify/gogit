@@ -248,7 +248,7 @@ Each `path` is either a git repository (reported directly) or a directory whose 
 | `--tz` | | `original` | Timestamp timezone: `original` (as recorded by git, per-commit), `local` (this machine's timezone), or `utc` |
 | `--depth` | | `1` | How many directory levels below each path to search for repositories |
 
-By default the baseline for "pending" is each branch's push target — its configured upstream, or the matching remote-tracking branch (e.g. `origin/main`). A branch that was **never pushed** has no such target, so *all* of its commits are reported as pending (rather than erroring). Use `--since-commit` to list commits after a specific hash instead; that applies to a single repository only.
+By default the baseline for "pending" is each branch's push target — its configured upstream, or the matching remote-tracking branch (e.g. `origin/main`). A branch that has **never been pushed under its own name** — the common case right after `git checkout -b` — falls back to the remote's default branch (e.g. `origin/main`), so only commits unique to the branch are reported rather than its parent branch's entire history. Only when the remote has no default branch to fall back to (nothing has ever been pushed to it) are *all* local commits reported as pending. Use `--since-commit` to list commits after a specific hash instead; that applies to a single repository only.
 
 The output shape is invariant in the number of repositories: a single repo is just a fleet of one. In a multi-repo sweep, repositories with nothing pending are omitted from the table/markdown views (the summary still counts them), and progress is shown on stderr so stdout stays clean for piping and JSON.
 
@@ -344,7 +344,7 @@ JSON format (`--format json`) is always a `repos` array plus a `summary`, whethe
 }
 ```
 
-The `mode` field is one of `unpushed` (ahead of the push baseline in `ref`), `unpushed-all` (no push target — every local commit is pending), or `since-commit` (commits after the `ref` hash).
+The `mode` field is one of `unpushed` (ahead of the push baseline in `ref` — the branch's own push target, or the remote's default branch as a fallback), `unpushed-all` (no baseline resolved at all — every local commit is pending), or `since-commit` (commits after the `ref` hash).
 
 ## Pushed Subcommand
 
