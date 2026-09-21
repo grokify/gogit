@@ -33,6 +33,11 @@ type PendingResult struct {
 	// branch has no push baseline at all — never pushed, or no upstream — in
 	// which case every commit reachable from HEAD is pending.
 	Baseline string
+	// Branch is the repository's current branch at query time (or "HEAD"
+	// when detached), so a caller reporting "no upstream configured" can
+	// also say which branch that refers to — easy to misread against the
+	// wrong checkout otherwise.
+	Branch string
 }
 
 // PendingCommits returns commits that exist locally but have not yet been
@@ -62,7 +67,11 @@ func (r *Repo) PendingCommits(ctx context.Context, sinceCommit string) (PendingR
 	if err != nil {
 		return PendingResult{}, err
 	}
-	return PendingResult{Commits: commits, Baseline: base}, nil
+	branch, err := r.currentBranchOrEmpty(ctx)
+	if err != nil {
+		return PendingResult{}, err
+	}
+	return PendingResult{Commits: commits, Baseline: base, Branch: branch}, nil
 }
 
 // PushedResult is the outcome of a PushedCommits query.
@@ -74,6 +83,9 @@ type PushedResult struct {
 	// "origin/main"). It is empty when the branch has no push target, in
 	// which case nothing has been pushed and Commits is empty.
 	Baseline string
+	// Branch is the repository's current branch at query time (or "HEAD"
+	// when detached).
+	Branch string
 }
 
 // PushedCommits returns up to limit commits that have already been pushed on
@@ -87,19 +99,23 @@ type PushedResult struct {
 // image of PendingCommits, which reports every commit as pending in the same
 // situation.
 func (r *Repo) PushedCommits(ctx context.Context, limit int) (PushedResult, error) {
+	branch, err := r.currentBranchOrEmpty(ctx)
+	if err != nil {
+		return PushedResult{}, err
+	}
 	base, err := r.pushBaseline(ctx)
 	if err != nil {
 		return PushedResult{}, err
 	}
 	if base == "" {
-		return PushedResult{}, nil
+		return PushedResult{Branch: branch}, nil
 	}
 
 	commits, err := r.Log(ctx, LogOptions{Rev: base, MaxCount: max(0, limit)})
 	if err != nil {
 		return PushedResult{}, err
 	}
-	return PushedResult{Commits: commits, Baseline: base}, nil
+	return PushedResult{Commits: commits, Baseline: base, Branch: branch}, nil
 }
 
 // pushBaseline returns the ref representing what the current branch has
@@ -130,6 +146,16 @@ func (r *Repo) pushBaseline(ctx context.Context) (string, error) {
 		return tracking, nil
 	}
 	return "", nil
+}
+
+// currentBranchOrEmpty returns the current branch (or "HEAD" when detached),
+// or "" for an unborn HEAD (freshly init'd repo, no commits yet), which
+// otherwise makes Branch return an error.
+func (r *Repo) currentBranchOrEmpty(ctx context.Context) (string, error) {
+	if !r.refExists(ctx, "HEAD") {
+		return "", nil
+	}
+	return r.Branch(ctx)
 }
 
 // refExists reports whether rev resolves to a commit object.

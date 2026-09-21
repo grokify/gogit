@@ -92,6 +92,7 @@ func runPushed(cmd *cobra.Command, args []string) error {
 
 	return render.Commits(os.Stdout, pushedFormat, []render.CommitReport{{
 		Repo:    absPath,
+		Branch:  res.Branch,
 		Mode:    "pushed",
 		Ref:     res.Baseline,
 		Commits: commits,

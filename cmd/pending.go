@@ -118,6 +118,7 @@ func runPending(cmd *cobra.Command, args []string) error {
 		}
 		report.Commits = commits
 		report.Ref = res.Value.Baseline
+		report.Branch = res.Value.Branch
 		report.Mode = pendingMode(pendingSinceCommit, res.Value.Baseline)
 		reports[i] = report
 	}

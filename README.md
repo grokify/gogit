@@ -284,14 +284,14 @@ gitscan pending --tz utc
 Table format (default; aligned columns via `text/tabwriter`, meant to be read directly in a terminal). A multi-repo sweep prints one section per repo with pending work, then a summary:
 
 ```
-Repo: /Users/me/go/src/github.com/myorg/service-a
+Repo: /Users/me/go/src/github.com/myorg/service-a (branch: main)
 Pending commits (not yet pushed to @{upstream}): 2
 
 #  HASH     DAY  TIMESTAMP                  MESSAGE
 1  1fbde76  Mon  2026-09-07T12:16:02-07:00  feat: add b
 2  af0101e  Mon  2026-09-07T12:16:05-07:00  feat: add c
 
-Repo: /Users/me/go/src/github.com/myorg/service-b
+Repo: /Users/me/go/src/github.com/myorg/service-b (branch: feat/new-thing)
 Pending commits (no upstream configured; all local commits unpushed): 1
 
 #  HASH     DAY  TIMESTAMP                  MESSAGE
@@ -299,6 +299,10 @@ Pending commits (no upstream configured; all local commits unpushed): 1
 
 Summary: 42 repos scanned, 2 with unpushed commits, 3 commits total
 ```
+
+The header always names the current branch, since "no upstream configured"
+on a fresh feature branch is easy to misread as unpushed work on `main`
+without it.
 
 Markdown format (`--format markdown`; valid GitHub-flavored markdown, e.g. for pasting into a PR description or issue):
 
@@ -316,6 +320,7 @@ JSON format (`--format json`) is always a `repos` array plus a `summary`, whethe
   "repos": [
     {
       "repo": "/Users/me/go/src/github.com/myorg/service-a",
+      "branch": "main",
       "mode": "unpushed",
       "ref": "@{upstream}",
       "count": 2,
@@ -375,7 +380,7 @@ gitscan pushed --format json
 ### Pushed Output
 
 ```
-Repo: /Users/me/go/src/github.com/me/repo
+Repo: /Users/me/go/src/github.com/me/repo (branch: main)
 Pushed commits (most recent first, from @{upstream}): 3
 
 #  HASH     DAY  TIMESTAMP                  MESSAGE

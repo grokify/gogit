@@ -90,6 +90,9 @@ func TestPendingCommitsUpstream(t *testing.T) {
 	if res.Baseline != "@{upstream}" {
 		t.Errorf("expected baseline @{upstream}, got %q", res.Baseline)
 	}
+	if res.Branch != "main" {
+		t.Errorf("expected branch %q, got %q", "main", res.Branch)
+	}
 	// Oldest first.
 	if res.Commits[0].Subject != "feat: add b" || res.Commits[1].Subject != "feat: add c" {
 		t.Errorf("unexpected order: %q, %q", res.Commits[0].Subject, res.Commits[1].Subject)
@@ -116,6 +119,9 @@ func TestPendingCommitsNoUpstreamListsAll(t *testing.T) {
 	}
 	if res.Baseline != "" {
 		t.Errorf("expected empty baseline when there is no push target, got %q", res.Baseline)
+	}
+	if res.Branch != "main" {
+		t.Errorf("expected branch %q even with no push target, got %q", "main", res.Branch)
 	}
 	if res.Commits[0].Subject != "chore: init" || res.Commits[1].Subject != "feat: add b" {
 		t.Errorf("unexpected order: %q, %q", res.Commits[0].Subject, res.Commits[1].Subject)
@@ -216,6 +222,9 @@ func TestPushedCommitsUpstream(t *testing.T) {
 	}
 	if res.Baseline != "@{upstream}" {
 		t.Errorf("expected baseline @{upstream}, got %q", res.Baseline)
+	}
+	if res.Branch != "main" {
+		t.Errorf("expected branch %q, got %q", "main", res.Branch)
 	}
 	if res.Commits[0].Subject != "chore: init" {
 		t.Errorf("unexpected pushed commit: %q", res.Commits[0].Subject)

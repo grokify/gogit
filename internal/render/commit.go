@@ -51,6 +51,12 @@ func ApplyTimezone(commits []gogit.Commit, tz string) ([]gogit.Commit, error) {
 // json bodies are identical across modes; only the per-repo header differs.
 type CommitReport struct {
 	Repo string
+	// Branch is the repository's current branch (or "HEAD" when detached),
+	// shown in the header so a report is never read against the wrong
+	// checkout — e.g. "no upstream configured" on a fresh feature branch is
+	// easy to misread as "main has unpushed work" without it. Empty when the
+	// branch could not be determined (surfaced via Err instead).
+	Branch string
 	// Mode selects the per-repo header and JSON "mode" value:
 	//   "unpushed"     - commits ahead of Ref (the push baseline)
 	//   "unpushed-all" - no push baseline; every local commit is pending
@@ -103,8 +109,9 @@ type commitRowJSON struct {
 // commitRepoJSON is one repository's entry in the JSON envelope.
 type commitRepoJSON struct {
 	Repo    string          `json:"repo"`
-	Mode    string          `json:"mode"` // see CommitReport.Mode
-	Ref     string          `json:"ref"`  // baseline ref or hash; may be empty
+	Branch  string          `json:"branch,omitempty"` // see CommitReport.Branch
+	Mode    string          `json:"mode"`             // see CommitReport.Mode
+	Ref     string          `json:"ref"`              // baseline ref or hash; may be empty
 	Count   int             `json:"count"`
 	Commits []commitRowJSON `json:"commits"`
 	Error   string          `json:"error,omitempty"`
@@ -134,6 +141,7 @@ func commitsJSON(w io.Writer, reports []CommitReport) error {
 		}
 		repo := commitRepoJSON{
 			Repo:    report.Repo,
+			Branch:  report.Branch,
 			Mode:    report.Mode,
 			Ref:     report.Ref,
 			Count:   len(report.Commits),
@@ -179,7 +187,11 @@ func summarize(reports []CommitReport) commitSummaryJSON {
 
 // commitHeader writes one repo's header lines.
 func commitHeader(w io.Writer, report CommitReport) {
-	fmt.Fprintf(w, "Repo: %s\n", report.Repo)
+	if report.Branch != "" {
+		fmt.Fprintf(w, "Repo: %s (branch: %s)\n", report.Repo, report.Branch)
+	} else {
+		fmt.Fprintf(w, "Repo: %s\n", report.Repo)
+	}
 	if report.Err != "" {
 		fmt.Fprintf(w, "  error: %s\n\n", report.Err)
 		return
