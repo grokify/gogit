@@ -49,6 +49,14 @@ integrations.
   untracked files), `Repo.StagedFiles` (staged additions/modifications),
   `Repo.ShowContent` (object content at a git spec, e.g. `:path` for the
   staged version), and `Repo.LsTree` (a revision's full file list).
+- **Exposure** — answer how far a commit or file has travelled.
+  `Repo.RefsContaining` lists the branches, remote-tracking branches, and
+  tags containing a commit (symbolic refs such as `origin/HEAD` omitted);
+  `Repo.TagsWithPath` lists the tags whose tree contains a path, separating
+  content that only lives in history from content that shipped in a
+  release; `Repo.FilesEverAdded` lists every path ever added on any ref,
+  including files since deleted from `HEAD`; and `Repo.IgnoredFiles` lists
+  untracked paths excluded by ignore rules.
 
 ## gitgrep
 

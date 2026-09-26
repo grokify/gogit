@@ -75,6 +75,10 @@ for _, c := range commits {
 | Staged files | `Repo.StagedFiles(ctx)` | Files with staged additions/modifications |
 | Object content | `Repo.ShowContent(ctx, spec)` | Content at a git spec (e.g. `:path` for the staged version) |
 | Revision tree | `Repo.LsTree(ctx, rev)` | Full file list at a revision |
+| Ref reachability | `Repo.RefsContaining(ctx, commit)` | Branches, remote-tracking branches, and tags containing a commit (pushed? released?) |
+| Tagged path | `Repo.TagsWithPath(ctx, path)` | Tags whose tree contains a path, in one batched call |
+| Historical files | `Repo.FilesEverAdded(ctx)` | Every path ever added on any ref, including since-deleted files |
+| Ignored files | `Repo.IgnoredFiles(ctx)` | Untracked paths excluded by ignore rules; fully ignored dirs collapse to `dir/` |
 | Content search | `gitgrep.GrepTree(ctx, repoPath, opts)` | Search the working tree, index, or a revision for patterns |
 | History search | `gitgrep.HistoryPickaxe(ctx, repoPath, opts)` | Commits whose diff added/removed a pattern (`git log -S`/`-G`) |
 | Patch streaming | `gitgrep.StreamPatches(ctx, repoPath, rng, fn)` | Stream `git log -p` diffs with commit context, for custom detectors |
