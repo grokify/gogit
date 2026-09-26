@@ -29,7 +29,9 @@ Generic, dependency-light Git ergonomics for Go, by shelling out to the
 git CLI: repository discovery, commit-log parsing with trailers
 (Co-authored-by) and change stats, AI authorship detection, conventional
 commit parsing, parallel multi-repo execution, calendar-date filtering,
-branch/origin metadata, remote-URL normalization, and tag dates. The base
+branch/origin metadata, remote-URL normalization, tag dates, and
+exposure queries (which refs and tagged releases contain a commit or
+path, every file ever committed, and ignored local files). The base
 layer for higher-level tools — including the bundled `gitscan` CLI and
 the OmniDevX telemetry collectors — in the same way
 [gogithub](https://github.com/grokify/gogithub) underlies GitHub
@@ -75,11 +77,33 @@ for _, c := range commits {
 | Staged files | `Repo.StagedFiles(ctx)` | Files with staged additions/modifications |
 | Object content | `Repo.ShowContent(ctx, spec)` | Content at a git spec (e.g. `:path` for the staged version) |
 | Revision tree | `Repo.LsTree(ctx, rev)` | Full file list at a revision |
+| Ref reachability | `Repo.RefsContaining(ctx, commit)` | Branches, remote-tracking branches, and tags containing a commit (pushed? released?) |
+| Tagged path | `Repo.TagsWithPath(ctx, path)` | Tags whose tree contains a path, in one batched call |
+| Historical files | `Repo.FilesEverAdded(ctx)` | Every path ever added on any ref, including since-deleted files |
+| Ignored files | `Repo.IgnoredFiles(ctx)` | Untracked paths excluded by ignore rules; fully ignored dirs collapse to `dir/` |
 | Content search | `gitgrep.GrepTree(ctx, repoPath, opts)` | Search the working tree, index, or a revision for patterns |
 | History search | `gitgrep.HistoryPickaxe(ctx, repoPath, opts)` | Commits whose diff added/removed a pattern (`git log -S`/`-G`) |
 | Patch streaming | `gitgrep.StreamPatches(ctx, repoPath, rng, fn)` | Stream `git log -p` diffs with commit context, for custom detectors |
 
 Renamed from `gitscan` (the CLI lives on at `cmd/gitscan`).
+
+### Exposure Queries
+
+Four `Repo` methods answer how far a commit or file has travelled — the
+follow-up question once a scan finds something that should not have been
+committed:
+
+```go
+refs, _ := repo.RefsContaining(ctx, "a1b2c3d")        // branches, remotes, tags containing a commit
+tags, _ := repo.TagsWithPath(ctx, "config/local.env")  // tagged releases whose tree has the path
+added, _ := repo.FilesEverAdded(ctx)                   // every path ever committed, incl. deleted
+ignored, _ := repo.IgnoredFiles(ctx)                   // untracked, ignored local paths
+```
+
+A tag can be downstream of the commit that added a file without containing
+the file (if it was deleted before tagging); `TagsWithPath` is the check
+that distinguishes "only in history" from "shipped in a release." See the
+[docs](https://grokify.github.io/gogit/#exposure-queries) for details.
 
 ### gitgrep Package
 

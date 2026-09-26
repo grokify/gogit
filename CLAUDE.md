@@ -43,8 +43,10 @@ release-tagging checklist).
 
 - Root package (`gogit`) — repository discovery, commit-log parsing with
   trailers and change stats, AI-authorship detection, file/content access
-  (`Repo.LsFiles`, `StagedFiles`, `ShowContent`, `LsTree`), parallel
-  multi-repo execution.
+  (`Repo.LsFiles`, `StagedFiles`, `ShowContent`, `LsTree`), exposure
+  queries (`RefsContaining`, `TagsWithPath`, `FilesEverAdded`,
+  `IgnoredFiles` in `exposure.go`), parallel multi-repo execution. Like
+  `gitgrep`, exposure queries report facts only — no severity or policy.
 - `gitgrep/` — policy-free content and history search (`GrepTree`,
   `HistoryPickaxe`, `StreamPatches`), by shelling out to native git. See
   `docs/gitgrep-design.md` for the full design (motivation, non-goals, API,
@@ -63,7 +65,10 @@ gitleaks itself dropped go-git for `git log -p` in v8.0.0 — and `git` being
 on `PATH` is already assumed by any tool operating on git repositories. Keep
 new git operations consistent with this: use `LC_ALL=C` and
 `GIT_TERMINAL_PROMPT=0` (see `gogit.go`'s `git()` helper and
-`gitgrep.runGit`).
+`gitgrep.runGit`). Prefer one batched git process over one per item — e.g.
+`TagsWithPath` feeds every `<tag>:<path>` query to a single
+`git cat-file --batch-check` via `gitStdin()` instead of spawning a process
+per tag.
 
 ## No PubGuard Dependency
 

@@ -114,9 +114,18 @@ func (r *Repo) OriginURL(ctx context.Context) (string, error) {
 // locale-independent, and GIT_TERMINAL_PROMPT=0 ensures no command can
 // hang waiting for credentials.
 func (r *Repo) git(ctx context.Context, args ...string) (string, error) {
+	return r.gitStdin(ctx, "", args...)
+}
+
+// gitStdin is git with stdin supplied, for batch commands such as
+// `git cat-file --batch-check` that read their queries from standard input.
+func (r *Repo) gitStdin(ctx context.Context, stdin string, args ...string) (string, error) {
 	fullArgs := append([]string{"-C", r.path}, args...)
 	cmd := exec.CommandContext(ctx, "git", fullArgs...)
 	cmd.Env = append(os.Environ(), "LC_ALL=C", "GIT_TERMINAL_PROMPT=0")
+	if stdin != "" {
+		cmd.Stdin = strings.NewReader(stdin)
+	}
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr

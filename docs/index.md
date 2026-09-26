@@ -49,6 +49,61 @@ integrations.
   untracked files), `Repo.StagedFiles` (staged additions/modifications),
   `Repo.ShowContent` (object content at a git spec, e.g. `:path` for the
   staged version), and `Repo.LsTree` (a revision's full file list).
+- **Exposure** — answer how far a commit or file has travelled.
+  `Repo.RefsContaining` lists the branches, remote-tracking branches, and
+  tags containing a commit (symbolic refs such as `origin/HEAD` omitted);
+  `Repo.TagsWithPath` lists the tags whose tree contains a path, separating
+  content that only lives in history from content that shipped in a
+  release; `Repo.FilesEverAdded` lists every path ever added on any ref,
+  including files since deleted from `HEAD`; and `Repo.IgnoredFiles` lists
+  untracked paths excluded by ignore rules.
+
+## Exposure Queries
+
+Once a repository scan turns something up — a credential, a file that
+should never have been committed — the next question is what that finding
+reaches. Four `Repo` methods answer it without ad-hoc git commands:
+
+| Question | Method | Git equivalent |
+|----------|--------|----------------|
+| Is this commit pushed? Released? | `RefsContaining(ctx, commit)` | `git for-each-ref --contains` |
+| Did this path ship in a tagged release? | `TagsWithPath(ctx, path)` | `git cat-file --batch-check` over `<tag>:<path>` |
+| What has ever been committed, including since-deleted files? | `FilesEverAdded(ctx)` | `git log --all --diff-filter=A` |
+| What exists locally but is ignored? | `IgnoredFiles(ctx)` | `git ls-files --others --ignored --directory` |
+
+```go
+repo, _ := gogit.Open("/path/to/repo")
+
+// Where has the commit that introduced a file gone?
+refs, _ := repo.RefsContaining(ctx, "a1b2c3d")
+for _, ref := range refs {
+    fmt.Println(ref.Kind, ref.Name) // branch main, remote origin/main, tag v1.2.0
+}
+
+// Was the file itself part of any tagged release tree?
+tags, _ := repo.TagsWithPath(ctx, "config/local.env")
+fmt.Println(len(tags) > 0)
+```
+
+`RefsContaining` and `TagsWithPath` answer different questions: a tag cut
+after the commit that added a file is *downstream* of it, but does not
+*contain* the file if a later commit deleted it before tagging. For Go
+modules the tagged tree is what `proxy.golang.org` archives permanently, so
+`TagsWithPath` is the check that tells "only in history" apart from
+"published in a release."
+
+Notes:
+
+- `RefsContaining` omits symbolic refs (`origin/HEAD`) and returns an error
+  for an unknown commit, so a typo never reads as "not pushed." Remote refs
+  reflect the last fetch.
+- `TagsWithPath` accepts files or directories relative to the repository
+  root, and checks every tag in one git process.
+- `FilesEverAdded` disables rename detection, so a renamed file appears
+  under both names. Files introduced only by a merge commit's conflict
+  resolution are not reported, matching `git log`'s default.
+- `IgnoredFiles` collapses fully ignored directories to a single `dir/`
+  entry and honors the global excludes file.
 
 ## gitgrep
 
@@ -111,4 +166,4 @@ go install github.com/grokify/gogit/cmd/gitscan@latest
 ```
 
 See the [README](https://github.com/grokify/gogit#readme) for full CLI
-usage, and [Releases](releases/v0.11.0.md) for version history.
+usage, and [Releases](releases/v0.12.0.md) for version history.
