@@ -14,7 +14,7 @@
       
       
       
-        <link rel="next" href="releases/v0.11.0/">
+        <link rel="next" href="releases/v0.12.0/">
       
       
         
@@ -329,6 +329,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#exposure-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exposure Queries
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#gitgrep" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -409,6 +420,34 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="releases/v0.12.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.12.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -763,6 +802,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#exposure-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exposure Queries
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#gitgrep" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -853,6 +903,80 @@ integrations.</p>
   untracked files), <code>Repo.StagedFiles</code> (staged additions/modifications),
   <code>Repo.ShowContent</code> (object content at a git spec, e.g. <code>:path</code> for the
   staged version), and <code>Repo.LsTree</code> (a revision's full file list).</li>
+<li><strong>Exposure</strong> — answer how far a commit or file has travelled.
+  <code>Repo.RefsContaining</code> lists the branches, remote-tracking branches, and
+  tags containing a commit (symbolic refs such as <code>origin/HEAD</code> omitted);
+  <code>Repo.TagsWithPath</code> lists the tags whose tree contains a path, separating
+  content that only lives in history from content that shipped in a
+  release; <code>Repo.FilesEverAdded</code> lists every path ever added on any ref,
+  including files since deleted from <code>HEAD</code>; and <code>Repo.IgnoredFiles</code> lists
+  untracked paths excluded by ignore rules.</li>
+</ul>
+<h2 id="exposure-queries">Exposure Queries</h2>
+<p>Once a repository scan turns something up — a credential, a file that
+should never have been committed — the next question is what that finding
+reaches. Four <code>Repo</code> methods answer it without ad-hoc git commands:</p>
+<table>
+<thead>
+<tr>
+<th>Question</th>
+<th>Method</th>
+<th>Git equivalent</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Is this commit pushed? Released?</td>
+<td><code>RefsContaining(ctx, commit)</code></td>
+<td><code>git for-each-ref --contains</code></td>
+</tr>
+<tr>
+<td>Did this path ship in a tagged release?</td>
+<td><code>TagsWithPath(ctx, path)</code></td>
+<td><code>git cat-file --batch-check</code> over <code>&lt;tag&gt;:&lt;path&gt;</code></td>
+</tr>
+<tr>
+<td>What has ever been committed, including since-deleted files?</td>
+<td><code>FilesEverAdded(ctx)</code></td>
+<td><code>git log --all --diff-filter=A</code></td>
+</tr>
+<tr>
+<td>What exists locally but is ignored?</td>
+<td><code>IgnoredFiles(ctx)</code></td>
+<td><code>git ls-files --others --ignored --directory</code></td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code><span class="nx">repo</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">gogit</span><span class="p">.</span><span class="nx">Open</span><span class="p">(</span><span class="s">&quot;/path/to/repo&quot;</span><span class="p">)</span>
+
+<span class="c1">// Where has the commit that introduced a file gone?</span>
+<span class="nx">refs</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">repo</span><span class="p">.</span><span class="nx">RefsContaining</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;a1b2c3d&quot;</span><span class="p">)</span>
+<span class="k">for</span><span class="w"> </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">ref</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">range</span><span class="w"> </span><span class="nx">refs</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">ref</span><span class="p">.</span><span class="nx">Kind</span><span class="p">,</span><span class="w"> </span><span class="nx">ref</span><span class="p">.</span><span class="nx">Name</span><span class="p">)</span><span class="w"> </span><span class="c1">// branch main, remote origin/main, tag v1.2.0</span>
+<span class="p">}</span>
+
+<span class="c1">// Was the file itself part of any tagged release tree?</span>
+<span class="nx">tags</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">repo</span><span class="p">.</span><span class="nx">TagsWithPath</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;config/local.env&quot;</span><span class="p">)</span>
+<span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nx">tags</span><span class="p">)</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+</code></pre></div>
+<p><code>RefsContaining</code> and <code>TagsWithPath</code> answer different questions: a tag cut
+after the commit that added a file is <em>downstream</em> of it, but does not
+<em>contain</em> the file if a later commit deleted it before tagging. For Go
+modules the tagged tree is what <code>proxy.golang.org</code> archives permanently, so
+<code>TagsWithPath</code> is the check that tells "only in history" apart from
+"published in a release."</p>
+<p>Notes:</p>
+<ul>
+<li><code>RefsContaining</code> omits symbolic refs (<code>origin/HEAD</code>) and returns an error
+  for an unknown commit, so a typo never reads as "not pushed." Remote refs
+  reflect the last fetch.</li>
+<li><code>TagsWithPath</code> accepts files or directories relative to the repository
+  root, and checks every tag in one git process.</li>
+<li><code>FilesEverAdded</code> disables rename detection, so a renamed file appears
+  under both names. Files introduced only by a merge commit's conflict
+  resolution are not reported, matching <code>git log</code>'s default.</li>
+<li><code>IgnoredFiles</code> collapses fully ignored directories to a single <code>dir/</code>
+  entry and honors the global excludes file.</li>
 </ul>
 <h2 id="gitgrep">gitgrep</h2>
 <p>A policy-free primitive for searching a repository's content and history,
@@ -902,7 +1026,7 @@ or history for one or more patterns.</p>
 <div class="highlight"><pre><span></span><code>go<span class="w"> </span>install<span class="w"> </span>github.com/grokify/gogit/cmd/gitscan@latest
 </code></pre></div>
 <p>See the <a href="https://github.com/grokify/gogit#readme">README</a> for full CLI
-usage, and <a href="releases/v0.11.0/">Releases</a> for version history.</p>
+usage, and <a href="releases/v0.12.0/">Releases</a> for version history.</p>
 
 
 
