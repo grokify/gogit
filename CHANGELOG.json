@@ -9,6 +9,46 @@
   ],
   "releases": [
     {
+      "version": "v0.12.0",
+      "date": "2026-09-26",
+      "highlights": [
+        {
+          "description": "New exposure queries on `Repo` answer how far a commit or file has travelled: which branches, remote-tracking branches, and tags contain a commit; which tagged releases shipped a path; every path ever added to history; and which local files are ignored",
+          "commit": "6ffd9ab"
+        }
+      ],
+      "added": [
+        {
+          "description": "`Repo.RefsContaining(ctx, commit)`: local branches, remote-tracking branches, and tags whose history contains a commit, as `[]Ref` with a `RefKind` (`branch`, `remote`, `tag`); symbolic refs such as `origin/HEAD` are omitted, and an unknown commit is an error rather than an empty result",
+          "commit": "6ffd9ab"
+        },
+        {
+          "description": "`Repo.TagsWithPath(ctx, path)`: tags whose tree contains a file or directory, checked for all tags in a single `git cat-file --batch-check` call — separates content that only exists in history from content that shipped in a tagged release",
+          "commit": "6ffd9ab"
+        },
+        {
+          "description": "`Repo.FilesEverAdded(ctx)`: every path added by any commit on any ref (`git log --all --diff-filter=A`), sorted and de-duplicated, including files since deleted from `HEAD`; renames are reported under the new path",
+          "commit": "6ffd9ab"
+        },
+        {
+          "description": "`Repo.IgnoredFiles(ctx)`: untracked paths excluded by `.gitignore`, `.git/info/exclude`, or the global excludes file, with fully ignored directories collapsed to a single `dir/` entry",
+          "commit": "6ffd9ab"
+        }
+      ],
+      "tests": [
+        {
+          "description": "Coverage for exposure queries against fixture repositories: `RefsContaining` with a bare remote, annotated and lightweight tags, a symbolic `origin/HEAD`, an unpushed commit, and invalid input; `TagsWithPath` with deleted files, directories, and tags predating a path; `FilesEverAdded` across renames, deletions, re-adds, and unmerged branches; `IgnoredFiles` directory collapsing",
+          "commit": "efe144b"
+        }
+      ],
+      "documentation": [
+        {
+          "description": "README feature table and docs index document the exposure queries",
+          "commit": "829f56c"
+        }
+      ]
+    },
+    {
       "version": "v0.11.0",
       "date": "2026-09-21",
       "highlights": [
