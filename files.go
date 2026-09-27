@@ -53,6 +53,17 @@ func (r *Repo) LsTree(ctx context.Context, rev string) ([]string, error) {
 	return splitNUL(out), nil
 }
 
+// LastCommitTouching returns the hash of the most recent commit at or before
+// at (a revision, e.g. "HEAD") that modified path, or "" if no commit
+// reachable from at ever touched it (e.g. the path doesn't exist there).
+func (r *Repo) LastCommitTouching(ctx context.Context, at, path string) (string, error) {
+	out, err := r.git(ctx, "log", "-1", "--format=%H", at, "--", path)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(out), nil
+}
+
 // splitNUL splits NUL-delimited git output into non-empty entries.
 func splitNUL(s string) []string {
 	var out []string

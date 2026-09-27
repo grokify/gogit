@@ -241,6 +241,48 @@ func TestLogWithoutBodyOmitsIt(t *testing.T) {
 	}
 }
 
+func TestLastCommitTouching(t *testing.T) {
+	dir := t.TempDir()
+	initRepo(t, dir)
+	commitFile(t, dir, "a.txt", "one\n", "chore: add a")
+	commitFile(t, dir, "b.txt", "two\n", "chore: add b")
+	commitFile(t, dir, "a.txt", "one-modified\n", "chore: modify a")
+
+	r, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	log, err := r.Log(context.Background(), LogOptions{Reverse: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	addB, modA := log[1].Hash, log[2].Hash
+
+	got, err := r.LastCommitTouching(context.Background(), "HEAD", "a.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != modA {
+		t.Errorf("LastCommitTouching(a.txt) = %s, want the modifying commit %s", got, modA)
+	}
+
+	got, err = r.LastCommitTouching(context.Background(), "HEAD", "b.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != addB {
+		t.Errorf("LastCommitTouching(b.txt) = %s, want %s", got, addB)
+	}
+
+	got, err = r.LastCommitTouching(context.Background(), "HEAD", "nope.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != "" {
+		t.Errorf("LastCommitTouching(nope.txt) = %q, want empty", got)
+	}
+}
+
 func TestLogWithoutStats(t *testing.T) {
 	dir := t.TempDir()
 	initRepo(t, dir)
