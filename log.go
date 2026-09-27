@@ -16,16 +16,30 @@ const (
 )
 
 // logFormat begins each record with recordSep and terminates the field list
-// with a trailing fieldSep, so multi-line trailers and any following
-// numstat block are unambiguously delimited: a record is
-// RS f0 FS f1 ... f8 FS <numstat lines until the next RS>.
-const logFormat = recordSep + "%H" + fieldSep + "%an" + fieldSep + "%ae" + fieldSep + "%aI" + fieldSep +
-	"%cn" + fieldSep + "%ce" + fieldSep + "%cI" + fieldSep + "%s" + fieldSep +
-	"%(trailers:only,unfold)" + fieldSep
+// with a trailing fieldSep, so multi-line trailers, an optional body, and
+// any following numstat block are unambiguously delimited: a record is
+// RS f0 FS f1 ... fN FS <numstat lines until the next RS>. %b (body,
+// included only when includeBody) is appended after trailers so the fixed
+// leading fields never shift position.
+func logFormat(includeBody bool) string {
+	f := recordSep + "%H" + fieldSep + "%an" + fieldSep + "%ae" + fieldSep + "%aI" + fieldSep +
+		"%cn" + fieldSep + "%ce" + fieldSep + "%cI" + fieldSep + "%s" + fieldSep +
+		"%(trailers:only,unfold)"
+	if includeBody {
+		f += fieldSep + "%b"
+	}
+	return f + fieldSep
+}
 
-// logFieldCount is the number of fieldSep-delimited parts per record: nine
-// fields plus the trailing chunk after the terminating separator.
-const logFieldCount = 10
+// logFieldCount is the number of fieldSep-delimited parts per record: the
+// fixed fields (plus %b when requested) plus the trailing chunk after the
+// terminating separator.
+func logFieldCount(includeBody bool) int {
+	if includeBody {
+		return 11
+	}
+	return 10
+}
 
 // LogOptions filters a commit-log query. Zero values leave a filter unset.
 type LogOptions struct {
@@ -53,6 +67,10 @@ type LogOptions struct {
 	// Reverse returns commits in chronological order (oldest first)
 	// instead of the default newest-first.
 	Reverse bool
+	// IncludeBody adds each commit's message body (everything after the
+	// subject line, via `%b`) — costs proportionally more per commit, so
+	// leave false when only the subject/trailers are needed.
+	IncludeBody bool
 }
 
 // Signature is an author or committer identity.
@@ -68,9 +86,9 @@ type Trailer struct {
 	Value string `json:"value"`
 }
 
-// Commit is one parsed log entry. Bodies are not extracted — subjects and
-// trailers cover attribution and classification needs; consumers that need
-// full messages can run git directly.
+// Commit is one parsed log entry. Body is only populated when
+// LogOptions.IncludeBody is set; subjects and trailers alone cover
+// attribution and classification needs for most callers.
 type Commit struct {
 	Hash         string    `json:"hash"`
 	Author       Signature `json:"author"`
@@ -78,6 +96,7 @@ type Commit struct {
 	Committer    Signature `json:"committer"`
 	CommitDate   time.Time `json:"commitDate"`
 	Subject      string    `json:"subject"`
+	Body         string    `json:"body,omitempty"`
 	Trailers     []Trailer `json:"trailers,omitempty"`
 	Insertions   int       `json:"insertions"`
 	Deletions    int       `json:"deletions"`
@@ -114,7 +133,7 @@ func parseSignature(s string) (Signature, bool) {
 // Log returns commits matching opts, newest first (git log order) unless
 // Reverse is set.
 func (r *Repo) Log(ctx context.Context, opts LogOptions) ([]Commit, error) {
-	args := []string{"log", "--format=" + logFormat}
+	args := []string{"log", "--format=" + logFormat(opts.IncludeBody)}
 	if !opts.Since.IsZero() {
 		args = append(args, "--since="+opts.Since.UTC().Format(time.RFC3339))
 	}
@@ -152,20 +171,21 @@ func (r *Repo) Log(ctx context.Context, opts LogOptions) ([]Commit, error) {
 		}
 		return nil, err
 	}
-	return parseLog(out)
+	return parseLog(out, opts.IncludeBody)
 }
 
 // parseLog splits records on the leading recordSep; within each record the
-// terminating fieldSep cleanly separates the nine fields from any numstat
+// terminating fieldSep cleanly separates the fixed fields from any numstat
 // block that follows.
-func parseLog(out string) ([]Commit, error) {
+func parseLog(out string, includeBody bool) ([]Commit, error) {
+	fieldCount := logFieldCount(includeBody)
 	var commits []Commit
 	for i, record := range strings.Split(out, recordSep) {
 		if i == 0 {
 			continue // content before the first record marker (empty)
 		}
-		parts := strings.SplitN(record, fieldSep, logFieldCount)
-		if len(parts) != logFieldCount {
+		parts := strings.SplitN(record, fieldSep, fieldCount)
+		if len(parts) != fieldCount {
 			return nil, fmt.Errorf("gogit: malformed log record %d: %d fields", i, len(parts))
 		}
 
@@ -187,7 +207,12 @@ func parseLog(out string) ([]Commit, error) {
 			Subject:    parts[7],
 			Trailers:   parseTrailers(parts[8]),
 		}
-		applyStats(&commit, parts[9])
+		trailingIdx := 9
+		if includeBody {
+			commit.Body = strings.TrimSpace(parts[9])
+			trailingIdx = 10
+		}
+		applyStats(&commit, parts[trailingIdx])
 		commits = append(commits, commit)
 	}
 	return commits, nil

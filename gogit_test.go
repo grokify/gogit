@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -180,6 +181,63 @@ func TestLogTrailersAndStats(t *testing.T) {
 	}
 	if plain.Insertions != 1 {
 		t.Errorf("plain stats: got +%d, want +1", plain.Insertions)
+	}
+}
+
+func TestLogIncludeBody(t *testing.T) {
+	dir := t.TempDir()
+	initRepo(t, dir)
+	commitFile(t, dir, "a.txt", "one\n", "feat: add feature\n\nBody text here.\n\nCo-authored-by: Claude <noreply@anthropic.com>")
+	commitFile(t, dir, "b.txt", "two\n", "fix: plain commit")
+
+	r, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	commits, err := r.Log(context.Background(), LogOptions{IncludeBody: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(commits) != 2 {
+		t.Fatalf("commits: got %d, want 2", len(commits))
+	}
+
+	feature := commits[1]
+	if feature.Subject != "feat: add feature" {
+		t.Errorf("subject: got %q", feature.Subject)
+	}
+	if !strings.Contains(feature.Body, "Body text here.") {
+		t.Errorf("body: got %q, want it to contain %q", feature.Body, "Body text here.")
+	}
+	// %b excludes the subject line.
+	if strings.Contains(feature.Body, "feat: add feature") {
+		t.Errorf("body should not repeat the subject: got %q", feature.Body)
+	}
+
+	plain := commits[0]
+	if plain.Body != "" {
+		t.Errorf("plain commit body: got %q, want empty", plain.Body)
+	}
+}
+
+func TestLogWithoutBodyOmitsIt(t *testing.T) {
+	dir := t.TempDir()
+	initRepo(t, dir)
+	commitFile(t, dir, "a.txt", "one\n", "feat: add feature\n\nBody text here.")
+
+	r, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	commits, err := r.Log(context.Background(), LogOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(commits) != 1 {
+		t.Fatalf("commits: got %d, want 1", len(commits))
+	}
+	if commits[0].Body != "" {
+		t.Errorf("body should be empty when IncludeBody is unset, got %q", commits[0].Body)
 	}
 }
 
