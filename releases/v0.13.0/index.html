@@ -945,11 +945,11 @@
 <h1 id="gogit-v0130-release-notes">gogit v0.13.0 Release Notes</h1>
 <p><strong>Release Date:</strong> 2026-09-27</p>
 <h2 id="overview">Overview</h2>
-<p>This release closes two small but real gaps that only showed up when a
-consumer (PubGuard) needed to inspect commit messages, not just diffs, and
-to ask about a single file's push status without re-deriving it from
-scratch. Both were previously only reachable by shelling out to git
-directly instead of going through <code>gogit</code>. No breaking changes.</p>
+<p>This release closes two small but real gaps: inspecting a commit's message
+body, not just its diff, and asking about a single file's push status
+without re-deriving it from scratch. Both were previously only reachable by
+shelling out to git directly instead of going through <code>gogit</code>. No breaking
+changes.</p>
 <h2 id="highlights">Highlights</h2>
 <h3 id="commit-message-bodies-opt-in">Commit message bodies, opt-in</h3>
 <p><code>LogOptions.IncludeBody</code> adds each commit's message body (<code>%b</code>) to the new
