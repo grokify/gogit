@@ -14,7 +14,7 @@
       
       
       
-        <link rel="next" href="releases/v0.12.0/">
+        <link rel="next" href="releases/v0.13.0/">
       
       
         
@@ -420,6 +420,34 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="releases/v0.13.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.13.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -866,7 +894,9 @@ integrations.</p>
   directory roots without descending into them.</li>
 <li><strong>Commit log</strong> — <code>Repo.Log</code> parses commits with calendar-date filtering,
   author/committer identities, subjects, trailers (<code>Commit.CoAuthors()</code>
-  for <code>Co-authored-by</code>), and <code>--numstat</code> change stats.</li>
+  for <code>Co-authored-by</code>), <code>--numstat</code> change stats, and an optional message
+  body (<code>LogOptions.IncludeBody</code>, opt-in like stats since it costs more per
+  commit).</li>
 <li><strong>Incremental ingestion</strong> — <code>LogOptions.SinceCommit</code> limits output to
   commits after a given SHA (<code>sha..HEAD</code>) for high-water-mark workflows;
   <code>LogOptions.Rev</code> logs from an arbitrary revision instead of HEAD.</li>
@@ -902,7 +932,9 @@ integrations.</p>
 <li><strong>File &amp; content access</strong> — <code>Repo.LsFiles</code> (tracked and, optionally,
   untracked files), <code>Repo.StagedFiles</code> (staged additions/modifications),
   <code>Repo.ShowContent</code> (object content at a git spec, e.g. <code>:path</code> for the
-  staged version), and <code>Repo.LsTree</code> (a revision's full file list).</li>
+  staged version), <code>Repo.LsTree</code> (a revision's full file list), and
+  <code>Repo.LastCommitTouching</code> (the most recent commit at or before a revision
+  that modified a path).</li>
 <li><strong>Exposure</strong> — answer how far a commit or file has travelled.
   <code>Repo.RefsContaining</code> lists the branches, remote-tracking branches, and
   tags containing a commit (symbolic refs such as <code>origin/HEAD</code> omitted);
@@ -1026,7 +1058,7 @@ or history for one or more patterns.</p>
 <div class="highlight"><pre><span></span><code>go<span class="w"> </span>install<span class="w"> </span>github.com/grokify/gogit/cmd/gitscan@latest
 </code></pre></div>
 <p>See the <a href="https://github.com/grokify/gogit#readme">README</a> for full CLI
-usage, and <a href="releases/v0.12.0/">Releases</a> for version history.</p>
+usage, and <a href="releases/v0.13.0/">Releases</a> for version history.</p>
 
 
 
