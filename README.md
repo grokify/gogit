@@ -56,6 +56,7 @@ for _, c := range commits {
 |---------|-------------|-------------|
 | Discovery | `Discover(roots, maxDepth)` | Depth-bounded repository discovery |
 | Commit log | `Repo.Log(ctx, LogOptions)` | Parsed commits with dates, trailers, numstat |
+| Commit message body | `LogOptions.IncludeBody` | Adds `Commit.Body` (opt-in, costs more per commit) |
 | Incremental log | `LogOptions.SinceCommit` | High-water-mark ingestion (`sha..HEAD`) |
 | Reverse order | `LogOptions.Reverse` | Chronological (oldest-first) iteration |
 | Co-authors | `Commit.CoAuthors()` | `Co-authored-by` trailer extraction |
@@ -77,6 +78,7 @@ for _, c := range commits {
 | Staged files | `Repo.StagedFiles(ctx)` | Files with staged additions/modifications |
 | Object content | `Repo.ShowContent(ctx, spec)` | Content at a git spec (e.g. `:path` for the staged version) |
 | Revision tree | `Repo.LsTree(ctx, rev)` | Full file list at a revision |
+| Last commit touching a path | `Repo.LastCommitTouching(ctx, at, path)` | Most recent commit at/before a revision that modified a path, or `""` |
 | Ref reachability | `Repo.RefsContaining(ctx, commit)` | Branches, remote-tracking branches, and tags containing a commit (pushed? released?) |
 | Tagged path | `Repo.TagsWithPath(ctx, path)` | Tags whose tree contains a path, in one batched call |
 | Historical files | `Repo.FilesEverAdded(ctx)` | Every path ever added on any ref, including since-deleted files |

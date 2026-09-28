@@ -9,6 +9,26 @@
   ],
   "releases": [
     {
+      "version": "v0.13.0",
+      "date": "2026-09-27",
+      "highlights": [
+        {
+          "description": "`LogOptions.IncludeBody` and `Repo.LastCommitTouching` close two gaps for callers that need to inspect commit messages or find which commit last touched a path \u2014 both were previously only reachable by shelling out to git directly",
+          "commit": "d8f100c"
+        }
+      ],
+      "added": [
+        {
+          "description": "`LogOptions.IncludeBody`: adds each commit's message body (`%b`) to `Commit.Body`, opt-in like `IncludeStats` since it costs proportionally more per commit; omitted fields keep the existing fixed-field parsing unchanged",
+          "commit": "d8f100c"
+        },
+        {
+          "description": "`Repo.LastCommitTouching(ctx, at, path)`: the most recent commit at or before a revision that modified a path, or \"\" if none \u2014 combined with `RefsContaining`, answers \"has this specific file's committed content already reached a remote\" without a separate git plumbing call",
+          "commit": "3c4fdb6"
+        }
+      ]
+    },
+    {
       "version": "v0.12.0",
       "date": "2026-09-26",
       "highlights": [
@@ -23,7 +43,7 @@
           "commit": "6ffd9ab"
         },
         {
-          "description": "`Repo.TagsWithPath(ctx, path)`: tags whose tree contains a file or directory, checked for all tags in a single `git cat-file --batch-check` call — separates content that only exists in history from content that shipped in a tagged release",
+          "description": "`Repo.TagsWithPath(ctx, path)`: tags whose tree contains a file or directory, checked for all tags in a single `git cat-file --batch-check` call \u2014 separates content that only exists in history from content that shipped in a tagged release",
           "commit": "6ffd9ab"
         },
         {
@@ -53,7 +73,7 @@
       "date": "2026-09-21",
       "highlights": [
         {
-          "description": "New `gitgrep` package: search a repository's working tree, index, a revision, or history for one or more patterns by shelling out to native git (`git grep`, the pickaxe `-S`/`-G`, and streamed `git log -p` patches) — a policy-free primitive for building content/leak scanners on top of gogit",
+          "description": "New `gitgrep` package: search a repository's working tree, index, a revision, or history for one or more patterns by shelling out to native git (`git grep`, the pickaxe `-S`/`-G`, and streamed `git log -p` patches) \u2014 a policy-free primitive for building content/leak scanners on top of gogit",
           "commit": "e6dca14"
         },
         {
@@ -101,7 +121,7 @@
       ],
       "dependencies": [
         {
-          "description": "github.com/grokify/mogo bumped 0.74.8 → 0.74.9",
+          "description": "github.com/grokify/mogo bumped 0.74.8 \u2192 0.74.9",
           "commit": "53502a2"
         }
       ],
@@ -121,7 +141,7 @@
           "commit": "4cb1c1e"
         },
         {
-          "description": "New `gitscan pushed` subcommand and `Repo.PushedCommits` library API: the most recent commits already pushed on a branch — the counterpart to `pending` — so you can see recent activity on either side of what has reached the remote",
+          "description": "New `gitscan pushed` subcommand and `Repo.PushedCommits` library API: the most recent commits already pushed on a branch \u2014 the counterpart to `pending` \u2014 so you can see recent activity on either side of what has reached the remote",
           "commit": "21882fb"
         },
         {
@@ -139,7 +159,7 @@
           "commit": "542b9c6"
         },
         {
-          "description": "`gitscan pending` and `gitscan pushed` JSON output changed from a single `{repo,mode,ref,count,commits}` object to an invariant `{\"repos\":[{…}],\"summary\":{…}}` envelope, so consumers never branch on the number of repositories reported",
+          "description": "`gitscan pending` and `gitscan pushed` JSON output changed from a single `{repo,mode,ref,count,commits}` object to an invariant `{\"repos\":[{\u2026}],\"summary\":{\u2026}}` envelope, so consumers never branch on the number of repositories reported",
           "commit": "4cb1c1e"
         }
       ],
@@ -215,7 +235,7 @@
       "date": "2026-09-07",
       "highlights": [
         {
-          "description": "New `gitscan pending` subcommand and `Repo.PendingCommits`/`Repo.HasUpstream` library API report commits that exist locally but haven't been pushed, or that come after an explicit commit hash — as an aligned terminal table, copy-pasteable markdown, or JSON for agents",
+          "description": "New `gitscan pending` subcommand and `Repo.PendingCommits`/`Repo.HasUpstream` library API report commits that exist locally but haven't been pushed, or that come after an explicit commit hash \u2014 as an aligned terminal table, copy-pasteable markdown, or JSON for agents",
           "commit": "a50d81b"
         },
         {
@@ -305,13 +325,13 @@
           "commit": "44628cc"
         },
         {
-          "description": "`cmd/*.go` rewired onto the new `scanner`/`internal/render`/`internal/cliutil` APIs: `cmd/root.go` shrinks from ~310 to ~110 lines, `cmd/pending.go` from ~200 to ~75; every subcommand is now just parse flags → call scanner → call render, with no behavior change",
+          "description": "`cmd/*.go` rewired onto the new `scanner`/`internal/render`/`internal/cliutil` APIs: `cmd/root.go` shrinks from ~310 to ~110 lines, `cmd/pending.go` from ~200 to ~75; every subcommand is now just parse flags \u2192 call scanner \u2192 call render, with no behavior change",
           "commit": "234cb82"
         }
       ],
       "dependencies": [
         {
-          "description": "github.com/grokify/mogo bumped 0.74.6 → 0.74.7 → 0.74.8",
+          "description": "github.com/grokify/mogo bumped 0.74.6 \u2192 0.74.7 \u2192 0.74.8",
           "commit": "8248015"
         }
       ],
@@ -339,11 +359,11 @@
           "commit": "234cb82"
         },
         {
-          "description": "`scanner`: closed coverage gaps in `TopologicalSort` (including cycle detection), `GetInternalDeps`/`GetTransitiveDependents`, `CheckWorkflowCompliance`/`parseReusableWorkflowRefs`, and remaining utilities — 41.2% to 90.7%",
+          "description": "`scanner`: closed coverage gaps in `TopologicalSort` (including cycle detection), `GetInternalDeps`/`GetTransitiveDependents`, `CheckWorkflowCompliance`/`parseReusableWorkflowRefs`, and remaining utilities \u2014 41.2% to 90.7%",
           "commit": "171d900"
         },
         {
-          "description": "`cmd/`: direct tests for every subcommand's argument validation and one real end-to-end run each against temp git-repo fixtures — 0% to 82.8%",
+          "description": "`cmd/`: direct tests for every subcommand's argument validation and one real end-to-end run each against temp git-repo fixtures \u2014 0% to 82.8%",
           "commit": "3af08cf"
         }
       ],
@@ -487,7 +507,7 @@
           "commit": "72f9f05"
         },
         {
-          "description": "ParseAIModel: extract model identity from co-author names (e.g. 'Claude Opus 4.6' → opus-4.6)",
+          "description": "ParseAIModel: extract model identity from co-author names (e.g. 'Claude Opus 4.6' \u2192 opus-4.6)",
           "commit": "72f9f05"
         },
         {
@@ -911,7 +931,7 @@
           "commit": "6e88de7"
         },
         {
-          "description": "Scan time reduced by ~50% (6.7s → 3.4s for 600 repos)",
+          "description": "Scan time reduced by ~50% (6.7s \u2192 3.4s for 600 repos)",
           "commit": "6e88de7"
         }
       ],

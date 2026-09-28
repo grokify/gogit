@@ -12,7 +12,9 @@ integrations.
   directory roots without descending into them.
 - **Commit log** — `Repo.Log` parses commits with calendar-date filtering,
   author/committer identities, subjects, trailers (`Commit.CoAuthors()`
-  for `Co-authored-by`), and `--numstat` change stats.
+  for `Co-authored-by`), `--numstat` change stats, and an optional message
+  body (`LogOptions.IncludeBody`, opt-in like stats since it costs more per
+  commit).
 - **Incremental ingestion** — `LogOptions.SinceCommit` limits output to
   commits after a given SHA (`sha..HEAD`) for high-water-mark workflows;
   `LogOptions.Rev` logs from an arbitrary revision instead of HEAD.
@@ -48,7 +50,9 @@ integrations.
 - **File & content access** — `Repo.LsFiles` (tracked and, optionally,
   untracked files), `Repo.StagedFiles` (staged additions/modifications),
   `Repo.ShowContent` (object content at a git spec, e.g. `:path` for the
-  staged version), and `Repo.LsTree` (a revision's full file list).
+  staged version), `Repo.LsTree` (a revision's full file list), and
+  `Repo.LastCommitTouching` (the most recent commit at or before a revision
+  that modified a path).
 - **Exposure** — answer how far a commit or file has travelled.
   `Repo.RefsContaining` lists the branches, remote-tracking branches, and
   tags containing a commit (symbolic refs such as `origin/HEAD` omitted);
@@ -166,4 +170,4 @@ go install github.com/grokify/gogit/cmd/gitscan@latest
 ```
 
 See the [README](https://github.com/grokify/gogit#readme) for full CLI
-usage, and [Releases](releases/v0.12.0.md) for version history.
+usage, and [Releases](releases/v0.13.0.md) for version history.
