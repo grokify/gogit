@@ -9,6 +9,16 @@
   ],
   "releases": [
     {
+      "version": "v0.13.1",
+      "date": "2026-09-28",
+      "fixed": [
+        {
+          "description": "Release workflow pinned Go 1.25 explicitly, while go.mod (bumped by a Dependabot update to github.com/grokify/mogo) requires Go >= 1.26 \u2014 the pin is now `go-version-file: go.mod`, so this can't drift out of sync again. v0.13.0's release build failed the same way (silently, since the underlying Go module is unaffected either way), leaving it without prebuilt gitscan binaries; this release ships those.",
+          "commit": "62031d9"
+        }
+      ]
+    },
+    {
       "version": "v0.13.0",
       "date": "2026-09-27",
       "highlights": [
