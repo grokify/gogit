@@ -1,7 +1,7 @@
 # AGENTS.md
 
 Project-specific instructions for coding agents. See
-`~/go/src/github.com/grokify/.github/CLAUDE.md` for org-wide conventions.
+`~/go/src/github.com/grokify/.github/AGENTS.md` for org-wide conventions.
 
 ## Development
 
