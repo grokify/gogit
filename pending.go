@@ -2,6 +2,7 @@ package gogit
 
 import (
 	"context"
+	"sort"
 	"strings"
 )
 
@@ -41,6 +42,12 @@ type PendingResult struct {
 	// also say which branch that refers to — easy to misread against the
 	// wrong checkout otherwise.
 	Branch string
+	// Files is the merged, de-duplicated, sorted list of paths touched by the
+	// pending commits, relative to the repository root. It is populated only
+	// by PendingFiles. A path appears once however many commits changed it,
+	// and includes paths that were later deleted or renamed away, because
+	// those commits still carry them.
+	Files []string
 }
 
 // PendingCommits returns commits that exist locally but have not yet been
@@ -78,6 +85,49 @@ func (r *Repo) PendingCommits(ctx context.Context, sinceCommit string) (PendingR
 		return PendingResult{}, err
 	}
 	return PendingResult{Commits: commits, Baseline: base, Branch: branch}, nil
+}
+
+// PendingFiles is PendingCommits plus the merged list of file paths touched
+// by those commits, in PendingResult.Files. The baseline is the one
+// PendingCommits resolves, so the commits and the files always describe the
+// same range. With no pending commits, Files is empty.
+//
+// Renames are reported as a deletion of the old path and an addition of the
+// new one, so both paths appear. Merge commits contribute nothing of their
+// own; the commits they merge are in the range and are counted directly.
+func (r *Repo) PendingFiles(ctx context.Context, sinceCommit string) (PendingResult, error) {
+	res, err := r.PendingCommits(ctx, sinceCommit)
+	if err != nil {
+		return PendingResult{}, err
+	}
+	if len(res.Commits) == 0 {
+		return res, nil
+	}
+	args := []string{"log", "--name-only", "--no-renames", "--format=", "-z"}
+	if res.Baseline != "" {
+		args = append(args, res.Baseline+"..HEAD")
+	}
+	out, err := r.git(ctx, args...)
+	if err != nil {
+		return PendingResult{}, err
+	}
+	res.Files = uniqueSorted(splitNUL(out))
+	return res, nil
+}
+
+// uniqueSorted returns the distinct values of in, sorted.
+func uniqueSorted(in []string) []string {
+	seen := make(map[string]struct{}, len(in))
+	out := make([]string, 0, len(in))
+	for _, v := range in {
+		if _, ok := seen[v]; ok {
+			continue
+		}
+		seen[v] = struct{}{}
+		out = append(out, v)
+	}
+	sort.Strings(out)
+	return out
 }
 
 // PushedResult is the outcome of a PushedCommits query.

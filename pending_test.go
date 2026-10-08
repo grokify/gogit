@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 )
 
@@ -385,5 +386,105 @@ func TestPushedCommitsNoUpstream(t *testing.T) {
 	}
 	if res.Baseline != "" {
 		t.Errorf("expected empty baseline with no push target, got %q", res.Baseline)
+	}
+}
+
+// Files touched by several pending commits are merged into one sorted list,
+// with each path once; files from already-pushed commits are excluded.
+func TestPendingFilesMergesAndDedupes(t *testing.T) {
+	dir, _ := pushableRepo(t) // a.txt is pushed
+	commitFile(t, dir, "b.txt", "one\n", "feat: add b")
+	commitFile(t, dir, "sub dir with space.txt", "x\n", "feat: add spaced path")
+	commitFile(t, dir, "b.txt", "two\n", "fix: change b again")
+
+	r, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := r.PendingFiles(context.Background(), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Commits) != 3 {
+		t.Fatalf("expected 3 pending commits, got %d", len(res.Commits))
+	}
+	want := []string{"b.txt", "sub dir with space.txt"}
+	if !slices.Equal(res.Files, want) {
+		t.Fatalf("Files = %q, want %q", res.Files, want)
+	}
+}
+
+// A path deleted or renamed away within the pending range is still listed,
+// along with the new name, because the pending commits carry both.
+func TestPendingFilesIncludesDeletedAndRenamed(t *testing.T) {
+	dir, _ := pushableRepo(t)
+	commitFile(t, dir, "gone.txt", "x\n", "feat: add gone")
+	run(t, dir, "rm", "-q", "gone.txt")
+	run(t, dir, "commit", "-q", "-m", "chore: remove gone")
+	run(t, dir, "mv", "a.txt", "renamed.txt")
+	run(t, dir, "commit", "-q", "-m", "refactor: rename a")
+
+	r, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := r.PendingFiles(context.Background(), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"a.txt", "gone.txt", "renamed.txt"}
+	if !slices.Equal(res.Files, want) {
+		t.Fatalf("Files = %q, want %q", res.Files, want)
+	}
+}
+
+func TestPendingFilesNothingPending(t *testing.T) {
+	dir, _ := pushableRepo(t)
+	r, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := r.PendingFiles(context.Background(), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Commits) != 0 || len(res.Files) != 0 {
+		t.Fatalf("expected no commits or files, got %d commits, files %q", len(res.Commits), res.Files)
+	}
+}
+
+// With no push target every commit is pending, so every path is listed.
+func TestPendingFilesNoUpstreamListsAll(t *testing.T) {
+	dir := t.TempDir()
+	initRepo(t, dir)
+	commitFile(t, dir, "a.txt", "hello\n", "chore: init")
+	commitFile(t, dir, "b.txt", "world\n", "feat: add b")
+	r, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := r.PendingFiles(context.Background(), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Baseline != "" || !slices.Equal(res.Files, []string{"a.txt", "b.txt"}) {
+		t.Fatalf("baseline = %q, Files = %q", res.Baseline, res.Files)
+	}
+}
+
+// --since-commit pins the range, so only later commits' paths are listed.
+func TestPendingFilesSinceHash(t *testing.T) {
+	dir, first := pushableRepo(t)
+	commitFile(t, dir, "b.txt", "one\n", "feat: add b")
+	r, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := r.PendingFiles(context.Background(), first)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(res.Files, []string{"b.txt"}) {
+		t.Fatalf("Files = %q, want [b.txt]", res.Files)
 	}
 }
