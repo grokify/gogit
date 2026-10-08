@@ -23,6 +23,8 @@ theme:
 
 nav:
   - Home: index.md
+  - Guides:
+      - Review What a Push Will Publish: guides/pending-files.md
   - Design:
       - gitgrep: design/gitgrep-design.md
   - Releases:

@@ -161,7 +161,9 @@ dependency filters, release ordering, and workflow compliance. The
 `pending` subcommand reports unpushed commits across one or many
 repositories (sweep several org directories at once), and `pushed`
 lists the most recent commits already pushed — both as an aligned
-terminal table, copy-pasteable markdown, or JSON for agents. `grep`
+terminal table, copy-pasteable markdown, or JSON for agents. `pending
+--files` also lists the merged file paths those commits touch (see
+[Review What a Push Will Publish](guides/pending-files.md)). `grep`
 searches a single repository's working tree, staged index, a revision,
 or history for one or more patterns.
 
