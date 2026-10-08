@@ -14,7 +14,7 @@
       
       
       
-        <link rel="next" href="releases/v0.13.0/">
+        <link rel="next" href="guides/pending-files/">
       
       
         
@@ -399,7 +399,7 @@
   <span class="md-ellipsis">
     
   
-    Releases
+    Guides
   
 
     
@@ -415,11 +415,241 @@
             <span class="md-nav__icon md-icon"></span>
             
   
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="guides/pending-files/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Review What a Push Will Publish
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="design/gitgrep-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    gitgrep
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Releases
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
     Releases
   
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="releases/v0.14.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.14.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="releases/v0.13.1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.13.1
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -1030,7 +1260,7 @@ general-purpose building block rather than a leak/secret scanner itself.</p>
 </code></pre></div>
 <p><code>Match.Text</code> and <code>Patch.Hunk</code> are returned verbatim; redacting them before
 display or logging is the caller's responsibility. See the
-<a href="https://github.com/grokify/gogit/blob/main/docs/gitgrep-design.md">gitgrep design note</a>
+<a href="https://github.com/grokify/gogit/blob/main/docs/design/gitgrep-design.md">gitgrep design note</a>
 for the full API and caveats.</p>
 <div class="highlight"><pre><span></span><code><span class="nx">repo</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">gogit</span><span class="p">.</span><span class="nx">Open</span><span class="p">(</span><span class="s">&quot;/path/to/repo&quot;</span><span class="p">)</span>
 <span class="nx">commits</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">repo</span><span class="p">.</span><span class="nx">Log</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span><span class="w"> </span><span class="nx">gogit</span><span class="p">.</span><span class="nx">LogOptions</span><span class="p">{</span>
@@ -1052,13 +1282,15 @@ dependency filters, release ordering, and workflow compliance. The
 <code>pending</code> subcommand reports unpushed commits across one or many
 repositories (sweep several org directories at once), and <code>pushed</code>
 lists the most recent commits already pushed — both as an aligned
-terminal table, copy-pasteable markdown, or JSON for agents. <code>grep</code>
+terminal table, copy-pasteable markdown, or JSON for agents. <code>pending
+--files</code> also lists the merged file paths those commits touch (see
+<a href="guides/pending-files/">Review What a Push Will Publish</a>). <code>grep</code>
 searches a single repository's working tree, staged index, a revision,
 or history for one or more patterns.</p>
 <div class="highlight"><pre><span></span><code>go<span class="w"> </span>install<span class="w"> </span>github.com/grokify/gogit/cmd/gitscan@latest
 </code></pre></div>
 <p>See the <a href="https://github.com/grokify/gogit#readme">README</a> for full CLI
-usage, and <a href="releases/v0.13.0/">Releases</a> for version history.</p>
+usage, and <a href="releases/v0.13.1/">Releases</a> for version history.</p>
 
 
 

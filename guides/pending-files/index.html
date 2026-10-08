@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://grokify.github.io/gogit/releases/v0.10.0/">
+        <link rel="canonical" href="https://grokify.github.io/gogit/guides/pending-files/">
       
       
-        <link rel="prev" href="../v0.11.0/">
+        <link rel="prev" href="../..">
       
       
-        <link rel="next" href="../v0.9.0/">
+        <link rel="next" href="../../design/gitgrep-design/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>v0.10.0 - gogit</title>
+        <title>Review What a Push Will Publish - gogit</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#gogit-v0100-release-notes" class="md-skip">
+        <a href="#review-what-a-push-will-publish" class="md-skip">
           Skip to content
         </a>
       
@@ -114,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              v0.10.0
+              Review What a Push Will Publish
             
           </span>
         </div>
@@ -284,8 +284,10 @@
       
   
   
+    
   
   
+  
     
     
     
@@ -296,11 +298,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
           <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
@@ -321,7 +323,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -336,10 +338,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../guides/pending-files/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Review What a Push Will Publish
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -355,6 +384,81 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#one-repository" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One repository
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#many-repositories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Many repositories
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-the-list-contains" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the list contains
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#choosing-the-range" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Choosing the range
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Limits
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -458,8 +562,6 @@
       
   
   
-    
-  
   
   
     
@@ -472,11 +574,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
         
           
           <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
@@ -497,7 +599,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
@@ -515,7 +617,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../v0.14.0/" class="md-nav__link">
+      <a href="../../releases/v0.14.0/" class="md-nav__link">
         
   
   
@@ -543,7 +645,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../v0.13.1/" class="md-nav__link">
+      <a href="../../releases/v0.13.1/" class="md-nav__link">
         
   
   
@@ -571,7 +673,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../v0.13.0/" class="md-nav__link">
+      <a href="../../releases/v0.13.0/" class="md-nav__link">
         
   
   
@@ -599,7 +701,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../v0.12.0/" class="md-nav__link">
+      <a href="../../releases/v0.12.0/" class="md-nav__link">
         
   
   
@@ -627,7 +729,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../v0.11.0/" class="md-nav__link">
+      <a href="../../releases/v0.11.0/" class="md-nav__link">
         
   
   
@@ -652,37 +754,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    v0.10.0
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../releases/v0.10.0/" class="md-nav__link">
         
   
   
@@ -698,120 +773,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Overview
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#highlights" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Highlights
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Highlights">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#fleet-wide-gitscan-pending" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Fleet-wide gitscan pending
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#new-gitscan-pushed-command" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        New gitscan pushed command
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#pending-no-longer-errors-without-an-upstream" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        pending no longer errors without an upstream
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#uniform-positional-directory" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Uniform positional directory
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#breaking-changes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Breaking Changes
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#installation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Installation
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -824,7 +785,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../v0.9.0/" class="md-nav__link">
+      <a href="../../releases/v0.9.0/" class="md-nav__link">
         
   
   
@@ -852,7 +813,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../v0.8.0/" class="md-nav__link">
+      <a href="../../releases/v0.8.0/" class="md-nav__link">
         
   
   
@@ -880,7 +841,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../v0.7.0/" class="md-nav__link">
+      <a href="../../releases/v0.7.0/" class="md-nav__link">
         
   
   
@@ -908,7 +869,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../v0.6.0/" class="md-nav__link">
+      <a href="../../releases/v0.6.0/" class="md-nav__link">
         
   
   
@@ -936,7 +897,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../v0.5.0/" class="md-nav__link">
+      <a href="../../releases/v0.5.0/" class="md-nav__link">
         
   
   
@@ -964,7 +925,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../v0.4.0/" class="md-nav__link">
+      <a href="../../releases/v0.4.0/" class="md-nav__link">
         
   
   
@@ -992,7 +953,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../v0.3.0/" class="md-nav__link">
+      <a href="../../releases/v0.3.0/" class="md-nav__link">
         
   
   
@@ -1020,7 +981,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../v0.2.0/" class="md-nav__link">
+      <a href="../../releases/v0.2.0/" class="md-nav__link">
         
   
   
@@ -1048,7 +1009,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../v0.1.0/" class="md-nav__link">
+      <a href="../../releases/v0.1.0/" class="md-nav__link">
         
   
   
@@ -1103,10 +1064,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#one-repository" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Overview
+        One repository
       
     </span>
   </a>
@@ -1114,71 +1075,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#highlights" class="md-nav__link">
+  <a href="#many-repositories" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Highlights
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Highlights">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#fleet-wide-gitscan-pending" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Fleet-wide gitscan pending
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#new-gitscan-pushed-command" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        New gitscan pushed command
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#pending-no-longer-errors-without-an-upstream" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        pending no longer errors without an upstream
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#uniform-positional-directory" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Uniform positional directory
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#breaking-changes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Breaking Changes
+        Many repositories
       
     </span>
   </a>
@@ -1186,10 +1086,32 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#installation" class="md-nav__link">
+  <a href="#what-the-list-contains" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Installation
+        What the list contains
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#choosing-the-range" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Choosing the range
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Limits
       
     </span>
   </a>
@@ -1216,54 +1138,74 @@
   
 
 
-<h1 id="gogit-v0100-release-notes">gogit v0.10.0 Release Notes</h1>
-<p><strong>Release Date:</strong> 2026-09-08</p>
-<h2 id="overview">Overview</h2>
-<p>This release turns <code>gitscan pending</code> from a single-repo report into a fleet-wide sweep, adds a <code>pushed</code> counterpart command, fixes <code>pending</code> so a never-pushed branch reports its commits instead of erroring, and removes the redundant <code>-d</code>/<code>--dir</code> flag in favor of a uniform positional directory argument. Two breaking changes come with it — the removed flag and a new invariant JSON output shape.</p>
-<h2 id="highlights">Highlights</h2>
-<h3 id="fleet-wide-gitscan-pending">Fleet-wide <code>gitscan pending</code></h3>
-<p><code>pending</code> now accepts one or more paths. Each path is either a git repository (reported directly) or a directory whose repositories are discovered (one level deep by default; <code>--depth</code> to go deeper) and each reported in turn. Point it at the GitHub orgs you manage and sweep them in one command:</p>
-<div class="highlight"><pre><span></span><code>gitscan<span class="w"> </span>pending<span class="w"> </span>~/go/src/github.com/<span class="o">{</span>myorg,myuser<span class="o">}</span>
+<h1 id="review-what-a-push-will-publish">Review What a Push Will Publish</h1>
+<p><code>gitscan pending --files</code> lists every file path touched by the commits you
+have made locally but not yet pushed. Use it as the last look before a push,
+or as the input to a check that should run over exactly what is about to
+leave your machine.</p>
+<h2 id="one-repository">One repository</h2>
+<div class="highlight"><pre><span></span><code>gitscan<span class="w"> </span>pending<span class="w"> </span>--files<span class="w"> </span>.
 </code></pre></div>
-<p>Repositories are read concurrently, with a live progress bar on stderr (so stdout stays clean for piping and JSON). Repos with nothing pending are omitted from the table/markdown views, and a summary reports how many were scanned, how many have unpushed work, and the total commit count:</p>
-<div class="highlight"><pre><span></span><code>Repo: /Users/me/go/src/github.com/myorg/service-a
-Pending commits (not yet pushed to @{upstream}): 2
+<div class="highlight"><pre><span></span><code>Repo: /home/me/src/acme/billing (branch: main)
+Pending commits (not yet pushed to @{upstream}): 3
 
 #  HASH     DAY  TIMESTAMP                  MESSAGE
-1  1fbde76  Mon  2026-09-07T12:16:02-07:00  feat: add b
-2  af0101e  Mon  2026-09-07T12:16:05-07:00  feat: add c
+1  a1b2c3d  Thu  2026-10-08T09:12:04-07:00  feat: add invoice export
+2  d4e5f6a  Thu  2026-10-08T09:40:31-07:00  fix: round tax to cents
+3  0f9e8d7  Thu  2026-10-08T10:02:55-07:00  docs: describe the export format
 
-Summary: 42 repos scanned, 2 with unpushed commits, 3 commits total
+Files (4):
+  docs/export.md
+  go.mod
+  internal/invoice/export.go
+  internal/invoice/export_test.go
 </code></pre></div>
-<p>The output shape is invariant in the number of repositories — a single repo is just a fleet of one — so scripts and agents never have to branch on how many repos matched.</p>
-<h3 id="new-gitscan-pushed-command">New <code>gitscan pushed</code> command</h3>
-<p>The counterpart to <code>pending</code>: list the most recent commits already pushed on the current branch — those reachable from its push target (upstream or matching remote-tracking branch) — newest first. Together the two commands show the recent commits on either side of what has reached the remote.</p>
-<div class="highlight"><pre><span></span><code>gitscan<span class="w"> </span>pushed<span class="w">        </span><span class="c1"># last 10 pushed commits in the current repo</span>
-gitscan<span class="w"> </span>pushed<span class="w"> </span><span class="m">25</span><span class="w">     </span><span class="c1"># last 25</span>
+<p>The list is merged across the commits: a file changed by all three commits
+appears once. It is sorted, and every path is relative to the repository root.</p>
+<h2 id="many-repositories">Many repositories</h2>
+<p>Pass several paths, or a directory of repositories, and each repository gets
+its own list:</p>
+<div class="highlight"><pre><span></span><code>gitscan<span class="w"> </span>pending<span class="w"> </span>--files<span class="w"> </span>~/src/acme<span class="w"> </span>~/src/me
 </code></pre></div>
-<p><code>count</code> defaults to 10 and is an optional positional (in either order relative to the directory). The library gains <code>Repo.PushedCommits(ctx, limit)</code> and a <code>LogOptions.Rev</code> field for logging from an arbitrary revision.</p>
-<h3 id="pending-no-longer-errors-without-an-upstream"><code>pending</code> no longer errors without an upstream</h3>
-<p>Previously <code>pending</code> errored <code>no upstream configured</code> whenever <code>@{upstream}</code> didn't resolve, which also blocked repos that simply had not been pushed yet — exactly the commits <code>pending</code> should surface. It now resolves a push baseline (the configured upstream, or failing that the matching remote-tracking branch such as <code>origin/main</code>) and, when a branch has never been pushed, reports every commit as pending. An unborn or detached <code>HEAD</code> yields no pending commits rather than an error.</p>
-<h3 id="uniform-positional-directory">Uniform positional directory</h3>
-<p>The <code>-d</code>/<code>--dir</code> flag is gone. Every subcommand takes the directory as an optional positional argument defaulting to the current directory, matching how <code>pending</code> already worked.</p>
-<h2 id="breaking-changes">Breaking Changes</h2>
+<p>Repositories with nothing pending are left out of the table. For scripts, use
+JSON, which has a <code>files</code> array on each repository:</p>
+<div class="highlight"><pre><span></span><code>gitscan<span class="w"> </span>pending<span class="w"> </span>--files<span class="w"> </span>--format<span class="w"> </span>json<span class="w"> </span>~/src/acme<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">&#39;.repos[] | .repo as $r | .files[]? | &quot;\($r)/\(.)&quot;&#39;</span>
+</code></pre></div>
+<p>That prints absolute paths, one per line, ready to pipe into another tool. The
+<code>files</code> key is left out for a repository with nothing pending, hence the <code>?</code>.</p>
+<h2 id="what-the-list-contains">What the list contains</h2>
+<p>The list is every path the pending commits carry, which is not always the same
+as what is in the tree after them:</p>
 <ul>
-<li><strong><code>-d</code>/<code>--dir</code> removed</strong> from <code>gitscan</code> and <code>gitscan order</code>. Pass the directory as a positional argument instead:</li>
+<li>A file that a later pending commit <strong>deleted</strong> is still listed.</li>
+<li>A <strong>rename</strong> lists both the old and the new path.</li>
+<li><strong>Merge commits</strong> add nothing of their own. The commits they merge are in the
+  range and are counted directly.</li>
 </ul>
-<div class="highlight"><pre><span></span><code>gitscan<span class="w"> </span>~/go/src/github.com/myorg<span class="w">        </span><span class="c1"># was: gitscan -d ~/go/src/github.com/myorg</span>
-gitscan<span class="w"> </span>order<span class="w"> </span>~/go/src/github.com/myorg<span class="w">  </span><span class="c1"># was: gitscan order -d ...</span>
+<p>This is deliberate: a file that was added and then removed before the push is
+still in the pushed history, so a check over "what this push publishes" should
+see it. If you want only the paths that exist in the final tree, use git
+directly:</p>
+<div class="highlight"><pre><span></span><code>git<span class="w"> </span>diff<span class="w"> </span>--name-only<span class="w"> </span>@<span class="o">{</span>upstream<span class="o">}</span>..HEAD
 </code></pre></div>
+<h2 id="choosing-the-range">Choosing the range</h2>
+<p>By default the range is the commits ahead of the branch's push target: its
+configured upstream, or the matching remote-tracking branch. A branch that has
+never been pushed is compared with the remote's default branch, so only the
+commits unique to the branch count. If there is no remote at all, every commit
+is pending.</p>
+<p>To list the files since a specific commit instead, for one repository:</p>
+<div class="highlight"><pre><span></span><code>gitscan<span class="w"> </span>pending<span class="w"> </span>--files<span class="w"> </span>--since-commit<span class="w"> </span>abc1234<span class="w"> </span>.
+</code></pre></div>
+<p>The commit list and the file list always describe the same range.</p>
+<h2 id="limits">Limits</h2>
 <ul>
-<li><strong><code>pending</code>/<code>pushed</code> JSON shape changed</strong> from a single <code>{repo, mode, ref, count, commits}</code> object to an invariant envelope:</li>
+<li>The list has paths only. It does not include file contents, per-file change
+  status, or which commit touched which file.</li>
+<li>It reports facts, not findings. What to do with the paths, such as scanning
+  them for secrets or internal names, is up to the tool you pipe them into.</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="p">{</span><span class="w"> </span><span class="nt">&quot;repos&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;repo&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;…&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;unpushed&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;ref&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;@{upstream}&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;count&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;commits&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="err">…</span><span class="w"> </span><span class="p">]</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">],</span>
-<span class="w">  </span><span class="nt">&quot;summary&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;reposScanned&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;reposWithCommits&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;commitsTotal&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
-</code></pre></div>
-<p>Consumers should read <code>.repos[]</code> (always an array, even for one repository) and <code>.summary</code>.</p>
-<h2 id="installation">Installation</h2>
-<div class="highlight"><pre><span></span><code>go<span class="w"> </span>install<span class="w"> </span>github.com/grokify/gogit/cmd/gitscan@v0.10.0
-</code></pre></div>
-<p>See <a href="https://github.com/grokify/gogit/blob/main/CHANGELOG.md">CHANGELOG.md</a> for the categorized commit list.</p>
 
 
 
