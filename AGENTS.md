@@ -22,6 +22,24 @@ rather than raw git commands for commit analysis:
 | `git log --oneline --reverse <tag>..HEAD` | `schangelog parse-commits --since=<tag>` |
 | `git log --oneline \| head -N` | `schangelog parse-commits --last=N` |
 
+## Documentation Layout
+
+Each `docs/` directory has one purpose and its own update rule:
+
+| Path | Purpose | Update when |
+|------|---------|-------------|
+| `docs/index.md` | Site home and overview | A user-facing feature is added |
+| `docs/guides/` | User guides: how to use `gitscan` and the library | User-visible behavior changes (same change) |
+| `docs/design/` | Design notes: how a component works and why | Internals, contracts, or boundaries change (same change) |
+| `docs/releases/` | Release notes, one file per tag (`vX.Y.Z.md`) | Each release |
+
+- Design notes describe current behavior. When a design ships, mark its
+  `Status:` line implemented with the release.
+- Every page must be in the `mkdocs.yml` nav, and `mkdocs build --strict`
+  must pass.
+- The README stays the quick reference; put longer walkthroughs in
+  `docs/guides/`.
+
 Release workflow:
 
 1. Parse commits: `schangelog parse-commits --since=<tag>`
