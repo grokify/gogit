@@ -303,6 +303,9 @@ gitscan pending --format json
 
 # Normalize all timestamps to UTC (or --tz local for this machine's timezone)
 gitscan pending --tz utc
+
+# Also list every file path the pending commits touch (merged, each path once)
+gitscan pending --files
 ```
 
 ### Pending Output
@@ -371,6 +374,28 @@ JSON format (`--format json`) is always a `repos` array plus a `summary`, whethe
 ```
 
 The `mode` field is one of `unpushed` (ahead of the push baseline in `ref` — the branch's own push target, or the remote's default branch as a fallback), `unpushed-all` (no baseline resolved at all — every local commit is pending), or `since-commit` (commits after the `ref` hash).
+
+### Pending Files
+
+`--files` adds the merged list of file paths touched by the pending commits
+to each repository's report. Each path appears once however many commits
+changed it, sorted, and relative to the repository root:
+
+```text
+Files (3):
+  go.mod
+  docs/index.md
+  providers/claudecode/sessions.go
+```
+
+In JSON the list is a `files` array on each repo object, omitted when empty
+and when `--files` is not given. It is computed over the same range as the
+commit list, so the two always agree, and it honors `--since-commit`.
+
+The list is every path the commits carry, so it includes files that a later
+pending commit deleted, and a rename lists both the old and the new path.
+Use it to scan or review exactly what a push would publish; to see only what
+survives in the final tree, use `git diff --name-only @{upstream}..HEAD`.
 
 ## Pushed Subcommand
 
