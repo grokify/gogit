@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	version          = "0.13.1"
+	version          = "0.14.0"
 	progressBarWidth = 40
 )
 
