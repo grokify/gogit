@@ -9,6 +9,64 @@
   ],
   "releases": [
     {
+      "version": "v0.14.0",
+      "date": "2026-10-08",
+      "highlights": [
+        {
+          "description": "`gitscan pending --files` lists the merged, de-duplicated file paths touched by your unpushed commits, for reviewing or scanning exactly what a push will publish",
+          "commit": "2db4d22"
+        }
+      ],
+      "added": [
+        {
+          "description": "`Repo.PendingFiles(ctx, sinceCommit)` returns `PendingCommits` plus the sorted, de-duplicated paths touched by those commits in the new `PendingResult.Files`; it reuses the pending baseline so the commits and files always describe the same range, and lists a rename as the old and the new path",
+          "commit": "99f9cfe"
+        },
+        {
+          "description": "`gitscan pending --files` adds the merged file list to each repository's report in the table and markdown views and as a `files` array in JSON; output is unchanged without the flag",
+          "commit": "2db4d22"
+        }
+      ],
+      "tests": [
+        {
+          "description": "`PendingFiles` and `pending --files` tests covering merging and de-duplication, paths with spaces, deleted and renamed paths, no pending commits, no upstream, and `--since-commit`",
+          "commit": "99f9cfe"
+        }
+      ],
+      "documentation": [
+        {
+          "description": "Added a guide, \"Review What a Push Will Publish\", in `docs/guides/` and documented `pending --files` in the README and docs home",
+          "commit": "7803007"
+        },
+        {
+          "description": "Moved the gitgrep design note to `docs/design/gitgrep-design.md`, listed it in the site navigation, and marked it implemented as it shipped in v0.11.0",
+          "commit": "a4c7e62"
+        },
+        {
+          "description": "Defined the documentation layout (`docs/guides`, `docs/design`, `docs/releases`) and its update rules in AGENTS.md",
+          "commit": "d0c4f76"
+        },
+        {
+          "description": "Documented `pending --files` in the README",
+          "commit": "e65a57f"
+        },
+        {
+          "description": "Linked the changelog by URL from three release notes so `mkdocs build --strict` passes",
+          "commit": "1a4c82d"
+        },
+        {
+          "description": "Point the org guidelines reference at AGENTS.md",
+          "commit": "68787e4"
+        }
+      ],
+      "dependencies": [
+        {
+          "description": "Bumped `github.com/grokify/mogo` from 0.74.9 to 0.75.0",
+          "commit": "54b2df6"
+        }
+      ]
+    },
+    {
       "version": "v0.13.1",
       "date": "2026-09-28",
       "fixed": [

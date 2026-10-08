@@ -28,6 +28,7 @@ nav:
   - Design:
       - gitgrep: design/gitgrep-design.md
   - Releases:
+      - v0.14.0: releases/v0.14.0.md
       - v0.13.1: releases/v0.13.1.md
       - v0.13.0: releases/v0.13.0.md
       - v0.12.0: releases/v0.12.0.md
