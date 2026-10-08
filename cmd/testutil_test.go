@@ -106,6 +106,7 @@ func resetFlags(t *testing.T) {
 	includeTransitive = false
 	unpushedOnly = false
 	pendingSinceCommit = ""
+	pendingFiles = false
 	pendingFormat = "table"
 	pendingTZ = "original"
 	pendingDepth = 1

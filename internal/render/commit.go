@@ -68,6 +68,9 @@ type CommitReport struct {
 	// "unpushed-all", or "pushed" with no push target.
 	Ref     string
 	Commits []gogit.Commit
+	// Files is the merged, de-duplicated list of paths touched by Commits,
+	// relative to the repository root. Empty unless the caller asked for it.
+	Files []string
 	// Err, when non-empty, records why this repository could not be read.
 	Err string
 }
@@ -114,6 +117,7 @@ type commitRepoJSON struct {
 	Ref     string          `json:"ref"`              // baseline ref or hash; may be empty
 	Count   int             `json:"count"`
 	Commits []commitRowJSON `json:"commits"`
+	Files   []string        `json:"files,omitempty"` // merged paths touched by the commits
 	Error   string          `json:"error,omitempty"`
 }
 
@@ -146,6 +150,7 @@ func commitsJSON(w io.Writer, reports []CommitReport) error {
 			Ref:     report.Ref,
 			Count:   len(report.Commits),
 			Commits: make([]commitRowJSON, 0, len(report.Commits)),
+			Files:   report.Files,
 			Error:   report.Err,
 		}
 		for _, c := range report.Commits {
@@ -235,6 +240,7 @@ func commitsText(w io.Writer, reports []CommitReport, markdown bool) {
 			commitRowsTable(w, report.Commits)
 		}
 		fmt.Fprintln(w)
+		commitFiles(w, report.Files, markdown)
 	}
 
 	// The per-repo header already conveys the count for a single repo; only
@@ -244,6 +250,27 @@ func commitsText(w io.Writer, reports []CommitReport, markdown bool) {
 		fmt.Fprintf(w, "Summary: %d repos scanned, %d with %s commits, %d commits total\n",
 			s.ReposScanned, s.ReposWithCommits, summaryNoun(reports), s.CommitsTotal)
 	}
+}
+
+// commitFiles prints the merged file list under a repo's commits: a bulleted
+// list of code spans in markdown, indented paths otherwise. It prints nothing
+// when there are no files.
+func commitFiles(w io.Writer, files []string, markdown bool) {
+	if len(files) == 0 {
+		return
+	}
+	fmt.Fprintf(w, "Files (%d):\n", len(files))
+	if markdown {
+		fmt.Fprintln(w)
+	}
+	for _, f := range files {
+		if markdown {
+			fmt.Fprintf(w, "- `%s`\n", f)
+		} else {
+			fmt.Fprintf(w, "  %s\n", f)
+		}
+	}
+	fmt.Fprintln(w)
 }
 
 // summaryNoun labels the summary's per-repo count based on what was reported.

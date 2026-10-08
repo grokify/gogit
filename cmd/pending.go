@@ -19,6 +19,7 @@ var (
 	pendingFormat      string
 	pendingTZ          string
 	pendingDepth       int
+	pendingFiles       bool
 )
 
 var pendingCmd = &cobra.Command{
@@ -44,6 +45,12 @@ push target — its configured upstream, or the matching remote-tracking branch
 of its commits are reported as pending. Use --since-commit to list commits
 after a specific commit instead; that applies to a single repository only.
 
+With --files, each repository also lists the paths touched by its pending
+commits, merged into one sorted list with each path once. Paths are relative
+to the repository root and include files that were later deleted or renamed
+away, since the pending commits still carry them. In JSON this is a "files"
+array on each repo.
+
 With no path, the current directory is used. Timestamps are shown in RFC 3339
 with an explicit UTC offset; --tz local or --tz utc converts every timestamp
 to one consistent zone.
@@ -55,6 +62,7 @@ Examples:
   gitscan pending --since-commit abc1234         # Commits after abc1234 (single repo)
   gitscan pending --format markdown              # Copy-pasteable markdown table
   gitscan pending --format json                  # Machine-readable output for agents
+  gitscan pending --files                        # Also list every file path the pending commits touch
   gitscan pending --tz utc                       # Normalize all timestamps to UTC`,
 	Args: cobra.ArbitraryArgs,
 	RunE: runPending,
@@ -65,6 +73,7 @@ func init() {
 	pendingCmd.Flags().StringVarP(&pendingFormat, "format", "f", "table", "Output format: table (aligned for terminals), markdown (copy-pasteable), or json")
 	pendingCmd.Flags().StringVar(&pendingTZ, "tz", "original", "Timestamp timezone: original (as recorded by git), local, or utc")
 	pendingCmd.Flags().IntVar(&pendingDepth, "depth", 1, "How many directory levels below each path to search for repositories")
+	pendingCmd.Flags().BoolVar(&pendingFiles, "files", false, "Also list the merged, de-duplicated file paths touched by the pending commits")
 	rootCmd.AddCommand(pendingCmd)
 }
 
@@ -97,6 +106,9 @@ func runPending(cmd *cobra.Command, args []string) error {
 
 	results := gogit.RunAllWithProgress(context.Background(), repos,
 		func(ctx context.Context, r *gogit.Repo) (gogit.PendingResult, error) {
+			if pendingFiles {
+				return r.PendingFiles(ctx, pendingSinceCommit)
+			}
 			return r.PendingCommits(ctx, pendingSinceCommit)
 		}, 0, progressFn)
 
@@ -117,6 +129,7 @@ func runPending(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		report.Commits = commits
+		report.Files = res.Value.Files
 		report.Ref = res.Value.Baseline
 		report.Branch = res.Value.Branch
 		report.Mode = pendingMode(pendingSinceCommit, res.Value.Baseline)

@@ -166,3 +166,100 @@ func TestRunPendingEndToEnd(t *testing.T) {
 		t.Errorf("unexpected header: %s", out)
 	}
 }
+
+// pendingFilesRepo returns a pushed repo with two unpushed commits that touch
+// b.txt twice and add one path containing a space.
+func pendingFilesRepo(t *testing.T) string {
+	t.Helper()
+	work := pushableRepo(t)
+	for _, f := range []struct{ name, content, msg string }{
+		{"b.txt", "one\n", "feat: add b"},
+		{"dir with space/c.txt", "x\n", "feat: add c"},
+		{"b.txt", "two\n", "fix: change b"},
+	} {
+		path := filepath.Join(work, f.name)
+		if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(f.content), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		gitRun(t, work, "add", "-A")
+		gitRun(t, work, "commit", "-q", "-m", f.msg)
+	}
+	return work
+}
+
+func TestRunPendingFilesTable(t *testing.T) {
+	resetFlags(t)
+	pendingFiles = true
+	repo := pendingFilesRepo(t)
+
+	out := captureStdout(t, func() {
+		if err := runPending(nil, []string{repo}); err != nil {
+			t.Fatal(err)
+		}
+	})
+	if !strings.Contains(out, "Files (2):\n  b.txt\n  dir with space/c.txt\n") {
+		t.Errorf("expected the merged file list once per path, got:\n%s", out)
+	}
+	if strings.Contains(out, "a.txt") {
+		t.Errorf("a.txt was pushed and must not be listed:\n%s", out)
+	}
+}
+
+func TestRunPendingFilesMarkdown(t *testing.T) {
+	resetFlags(t)
+	pendingFiles = true
+	pendingFormat = "markdown"
+	repo := pendingFilesRepo(t)
+
+	out := captureStdout(t, func() {
+		if err := runPending(nil, []string{repo}); err != nil {
+			t.Fatal(err)
+		}
+	})
+	if !strings.Contains(out, "Files (2):\n\n- `b.txt`\n- `dir with space/c.txt`\n") {
+		t.Errorf("expected a blank line before the markdown list, got:\n%s", out)
+	}
+}
+
+func TestRunPendingFilesJSON(t *testing.T) {
+	resetFlags(t)
+	pendingFiles = true
+	pendingFormat = "json"
+	repo := pendingFilesRepo(t)
+
+	out := captureStdout(t, func() {
+		if err := runPending(nil, []string{repo}); err != nil {
+			t.Fatal(err)
+		}
+	})
+	if !strings.Contains(out, `"files": [`) || !strings.Contains(out, `"b.txt"`) || !strings.Contains(out, `"dir with space/c.txt"`) {
+		t.Errorf("expected a files array in the repo object, got:\n%s", out)
+	}
+}
+
+// Without --files the output has no file list and JSON has no files key.
+func TestRunPendingWithoutFilesIsUnchanged(t *testing.T) {
+	resetFlags(t)
+	repo := pendingFilesRepo(t)
+
+	out := captureStdout(t, func() {
+		if err := runPending(nil, []string{repo}); err != nil {
+			t.Fatal(err)
+		}
+	})
+	if strings.Contains(out, "Files (") {
+		t.Errorf("file list must not appear without --files:\n%s", out)
+	}
+	pendingFormat = "json"
+	out = captureStdout(t, func() {
+		if err := runPending(nil, []string{repo}); err != nil {
+			t.Fatal(err)
+		}
+	})
+	if strings.Contains(out, `"files"`) {
+		t.Errorf("JSON must omit files without --files:\n%s", out)
+	}
+}
