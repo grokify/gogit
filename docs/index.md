@@ -132,7 +132,7 @@ matches, _ := gitgrep.GrepTree(ctx, repoPath, gitgrep.Options{
 
 `Match.Text` and `Patch.Hunk` are returned verbatim; redacting them before
 display or logging is the caller's responsibility. See the
-[gitgrep design note](https://github.com/grokify/gogit/blob/main/docs/gitgrep-design.md)
+[gitgrep design note](https://github.com/grokify/gogit/blob/main/docs/design/gitgrep-design.md)
 for the full API and caveats.
 
 ```go

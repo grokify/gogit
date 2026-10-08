@@ -124,7 +124,7 @@ matches, err := gitgrep.GrepTree(ctx, repoPath, gitgrep.Options{
 
 `Match.Text` and `Patch.Hunk` are returned verbatim; redacting them before
 display or logging is the caller's responsibility. See the
-[gitgrep design note](docs/gitgrep-design.md) for the full API, git-command
+[gitgrep design note](docs/design/gitgrep-design.md) for the full API, git-command
 mapping, and caveats (tracked-content-only, exhaustive-history cost, regex
 dialect).
 

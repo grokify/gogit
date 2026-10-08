@@ -50,7 +50,7 @@ release-tagging checklist).
   queries report facts only — no severity or policy.
 - `gitgrep/` — policy-free content and history search (`GrepTree`,
   `HistoryPickaxe`, `StreamPatches`), by shelling out to native git. See
-  `docs/gitgrep-design.md` for the full design (motivation, non-goals, API,
+  `docs/design/gitgrep-design.md` for the full design (motivation, non-goals, API,
   caveats). Keep this package free of any domain policy (term lists,
   severities) — callers own that; gogit stays generic and reusable.
 - `scanner/` — fleet enumeration (`ScanDirectory`) and `GitBackend` for

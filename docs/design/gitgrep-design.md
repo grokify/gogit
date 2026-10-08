@@ -1,6 +1,6 @@
 # Design Note: `gitgrep` — git content & history search
 
-Status: proposed
+Status: implemented (v0.11.0)
 Package: `github.com/grokify/gogit/gitgrep`
 Audience: gogit maintainers and any library/CLI consumer
 
