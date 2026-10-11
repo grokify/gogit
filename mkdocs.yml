@@ -25,6 +25,7 @@ nav:
   - Home: index.md
   - Guides:
       - Review What a Push Will Publish: guides/pending-files.md
+      - Catch Unsigned Commits Before You Push: guides/unsigned-commits.md
   - Design:
       - gitgrep: design/gitgrep-design.md
   - Releases:

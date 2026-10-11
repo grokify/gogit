@@ -163,7 +163,9 @@ repositories (sweep several org directories at once), and `pushed`
 lists the most recent commits already pushed — both as an aligned
 terminal table, copy-pasteable markdown, or JSON for agents. `pending
 --files` also lists the merged file paths those commits touch (see
-[Review What a Push Will Publish](guides/pending-files.md)). `grep`
+[Review What a Push Will Publish](guides/pending-files.md)). Both mark each
+commit as signed or not and warn when some are unsigned (see
+[Catch Unsigned Commits Before You Push](guides/unsigned-commits.md)). `grep`
 searches a single repository's working tree, staged index, a revision,
 or history for one or more patterns.
 
