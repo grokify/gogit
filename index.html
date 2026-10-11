@@ -449,6 +449,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="guides/unsigned-commits/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Catch Unsigned Commits Before You Push
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -594,6 +622,34 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="releases/v0.15.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.15.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -1284,7 +1340,9 @@ repositories (sweep several org directories at once), and <code>pushed</code>
 lists the most recent commits already pushed — both as an aligned
 terminal table, copy-pasteable markdown, or JSON for agents. <code>pending
 --files</code> also lists the merged file paths those commits touch (see
-<a href="guides/pending-files/">Review What a Push Will Publish</a>). <code>grep</code>
+<a href="guides/pending-files/">Review What a Push Will Publish</a>). Both mark each
+commit as signed or not and warn when some are unsigned (see
+<a href="guides/unsigned-commits/">Catch Unsigned Commits Before You Push</a>). <code>grep</code>
 searches a single repository's working tree, staged index, a revision,
 or history for one or more patterns.</p>
 <div class="highlight"><pre><span></span><code>go<span class="w"> </span>install<span class="w"> </span>github.com/grokify/gogit/cmd/gitscan@latest
