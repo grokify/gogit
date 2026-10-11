@@ -71,6 +71,11 @@ type LogOptions struct {
 	// subject line, via `%b`) — costs proportionally more per commit, so
 	// leave false when only the subject/trailers are needed.
 	IncludeBody bool
+	// IncludeSignature sets Commit.Signed for each commit, via one extra
+	// `git log` over the same range. It only checks whether the commit
+	// object carries a signature; it does not verify it, so it needs no
+	// keys, allowed-signers file, or gpg/ssh invocation.
+	IncludeSignature bool
 }
 
 // Signature is an author or committer identity.
@@ -101,6 +106,12 @@ type Commit struct {
 	Insertions   int       `json:"insertions"`
 	Deletions    int       `json:"deletions"`
 	FilesChanged int       `json:"filesChanged"`
+	// Signed reports whether the commit carries a GPG/SSH/X.509 signature.
+	// It is nil unless LogOptions.IncludeSignature was set. Presence is
+	// checked, not validity: git's own verification (%G?) reports "N"
+	// (no signature) for SSH-signed commits when gpg.ssh.allowedSignersFile
+	// is unset, which would misreport signed commits as unsigned.
+	Signed *bool `json:"signed,omitempty"`
 }
 
 // CoAuthors returns identities from Co-authored-by trailers.
@@ -134,6 +145,40 @@ func parseSignature(s string) (Signature, bool) {
 // Reverse is set.
 func (r *Repo) Log(ctx context.Context, opts LogOptions) ([]Commit, error) {
 	args := []string{"log", "--format=" + logFormat(opts.IncludeBody)}
+	args = append(args, logFilterArgs(opts)...)
+	if opts.IncludeStats {
+		args = append(args, "--numstat")
+	}
+	if opts.Reverse {
+		args = append(args, "--reverse")
+	}
+	args = append(args, logRangeArgs(opts)...)
+
+	out, err := r.git(ctx, args...)
+	if err != nil {
+		// An empty repository (no HEAD yet) has no commits.
+		if strings.Contains(err.Error(), "does not have any commits") ||
+			strings.Contains(err.Error(), "unknown revision") {
+			return nil, nil
+		}
+		return nil, err
+	}
+	commits, err := parseLog(out, opts.IncludeBody)
+	if err != nil {
+		return nil, err
+	}
+	if opts.IncludeSignature && len(commits) > 0 {
+		if err := r.applySignatures(ctx, opts, commits); err != nil {
+			return nil, err
+		}
+	}
+	return commits, nil
+}
+
+// logFilterArgs returns the commit-selecting flags shared by the main log
+// query and the signature query, so both cover exactly the same commits.
+func logFilterArgs(opts LogOptions) []string {
+	var args []string
 	if !opts.Since.IsZero() {
 		args = append(args, "--since="+opts.Since.UTC().Format(time.RFC3339))
 	}
@@ -149,29 +194,18 @@ func (r *Repo) Log(ctx context.Context, opts LogOptions) ([]Commit, error) {
 	if opts.MaxCount > 0 {
 		args = append(args, fmt.Sprintf("--max-count=%d", opts.MaxCount))
 	}
-	if opts.IncludeStats {
-		args = append(args, "--numstat")
-	}
-	if opts.Reverse {
-		args = append(args, "--reverse")
-	}
+	return args
+}
+
+// logRangeArgs returns the revision-range argument, if any.
+func logRangeArgs(opts LogOptions) []string {
 	switch {
 	case opts.SinceCommit != "":
-		args = append(args, opts.SinceCommit+"..HEAD")
+		return []string{opts.SinceCommit + "..HEAD"}
 	case opts.Rev != "":
-		args = append(args, opts.Rev)
+		return []string{opts.Rev}
 	}
-
-	out, err := r.git(ctx, args...)
-	if err != nil {
-		// An empty repository (no HEAD yet) has no commits.
-		if strings.Contains(err.Error(), "does not have any commits") ||
-			strings.Contains(err.Error(), "unknown revision") {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return parseLog(out, opts.IncludeBody)
+	return nil
 }
 
 // parseLog splits records on the leading recordSep; within each record the

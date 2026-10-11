@@ -66,6 +66,9 @@ type PendingResult struct {
 //
 // If sinceCommit is non-empty it overrides the baseline entirely
 // ("sinceCommit..HEAD"), regardless of any upstream or default branch.
+//
+// Each returned commit has Signed set, so callers can flag unsigned commits
+// before they are pushed.
 func (r *Repo) PendingCommits(ctx context.Context, sinceCommit string) (PendingResult, error) {
 	base := sinceCommit
 	if base == "" {
@@ -76,7 +79,7 @@ func (r *Repo) PendingCommits(ctx context.Context, sinceCommit string) (PendingR
 		base = resolved
 	}
 
-	commits, err := r.Log(ctx, LogOptions{SinceCommit: base, Reverse: true})
+	commits, err := r.Log(ctx, LogOptions{SinceCommit: base, Reverse: true, IncludeSignature: true})
 	if err != nil {
 		return PendingResult{}, err
 	}
@@ -154,6 +157,8 @@ type PushedResult struct {
 // considered pushed: Commits is empty and Baseline is "". This is the mirror
 // image of PendingCommits, which reports every commit as pending in the same
 // situation.
+//
+// Each returned commit has Signed set, as with PendingCommits.
 func (r *Repo) PushedCommits(ctx context.Context, limit int) (PushedResult, error) {
 	branch, err := r.currentBranchOrEmpty(ctx)
 	if err != nil {
@@ -167,7 +172,7 @@ func (r *Repo) PushedCommits(ctx context.Context, limit int) (PushedResult, erro
 		return PushedResult{Branch: branch}, nil
 	}
 
-	commits, err := r.Log(ctx, LogOptions{Rev: base, MaxCount: max(0, limit)})
+	commits, err := r.Log(ctx, LogOptions{Rev: base, MaxCount: max(0, limit), IncludeSignature: true})
 	if err != nil {
 		return PushedResult{}, err
 	}
