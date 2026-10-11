@@ -9,6 +9,56 @@
   ],
   "releases": [
     {
+      "version": "v0.15.0",
+      "date": "2026-10-11",
+      "highlights": [
+        {
+          "description": "`gitscan pending` and `gitscan pushed` show whether each commit is signed and warn with the unsigned count, so a missing signature is noticed before it appears as Unverified on GitHub",
+          "commit": "0e446c8"
+        }
+      ],
+      "added": [
+        {
+          "description": "`LogOptions.IncludeSignature` and `Commit.Signed` (`*bool`, nil when not collected); signing is detected from the commit's signature header rather than git's `%G?`, which reports no signature for SSH-signed commits when `gpg.ssh.allowedSignersFile` is unset. `PendingCommits` and `PushedCommits` always collect it",
+          "commit": "b490bcd"
+        },
+        {
+          "description": "`Commit.IsUnsigned`, `Commit.HasSignature`, `CountUnsigned`, `HasSignatureInfo`, `SignatureWarning`, `PendingResult.UnsignedCount` and `PendingResult.UnsignedWarning` so callers share one signing policy: warn only when more than one commit is listed and at least one is unsigned",
+          "commit": "b490bcd"
+        },
+        {
+          "description": "`report` package: `Pending` and `Pushed` build reports from gogit queries (an unreadable repo becomes an error entry), `BuildEnvelope` returns the JSON-ready structure, and `Write` renders table, markdown or JSON, so the CLI, library and MCP callers share one implementation",
+          "commit": "0e446c8"
+        },
+        {
+          "description": "SIGNED column in the `pending` and `pushed` table and markdown output, a `WARNING: N of M commits are not signed.` line, and `signed` per commit and `unsigned` per repository in JSON",
+          "commit": "0e446c8"
+        }
+      ],
+      "changed": [
+        {
+          "description": "The `pending` and `pushed` table and markdown output gain a SIGNED column after HASH; JSON only gains fields",
+          "commit": "0e446c8"
+        },
+        {
+          "description": "Moved report building and rendering from `internal/render` and `cmd` into the public `report` package; `gitscan pushed` now validates `--tz` before running git",
+          "commit": "0e446c8"
+        }
+      ],
+      "tests": [
+        {
+          "description": "Signed and unsigned commits with no allowed-signers file, messages that mention a signature header, the warning policy, the raw-log parser, report builders including a broken repo in a fleet and invalid options, and CLI output",
+          "commit": "fb4db15"
+        }
+      ],
+      "documentation": [
+        {
+          "description": "Added a guide, \"Catch Unsigned Commits Before You Push\", in `docs/guides/`, and documented signature reporting and the `report` package in the README and AGENTS.md",
+          "commit": "15f0d03"
+        }
+      ]
+    },
+    {
       "version": "v0.14.0",
       "date": "2026-10-08",
       "highlights": [
