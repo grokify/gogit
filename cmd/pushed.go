@@ -6,9 +6,8 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/grokify/gogit"
 	"github.com/grokify/gogit/internal/cliutil"
-	"github.com/grokify/gogit/internal/render"
+	"github.com/grokify/gogit/report"
 	"github.com/spf13/cobra"
 )
 
@@ -75,26 +74,9 @@ func runPushed(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	repo, err := gogit.Open(absPath)
+	rep, err := report.Pushed(context.Background(), absPath, count, pushedTZ)
 	if err != nil {
 		return err
 	}
-
-	res, err := repo.PushedCommits(context.Background(), count)
-	if err != nil {
-		return err
-	}
-
-	commits, err := render.ApplyTimezone(res.Commits, pushedTZ)
-	if err != nil {
-		return err
-	}
-
-	return render.Commits(os.Stdout, pushedFormat, []render.CommitReport{{
-		Repo:    absPath,
-		Branch:  res.Branch,
-		Mode:    "pushed",
-		Ref:     res.Baseline,
-		Commits: commits,
-	}})
+	return report.Write(os.Stdout, pushedFormat, []report.Report{rep})
 }

@@ -1,4 +1,4 @@
-package render
+package report
 
 import (
 	"bytes"
@@ -10,9 +10,9 @@ import (
 	"github.com/grokify/gogit"
 )
 
-func testReport() CommitReport {
+func testReport() Report {
 	loc := time.FixedZone("", -7*3600)
-	return CommitReport{
+	return Report{
 		Repo: "/repo",
 		Mode: "unpushed",
 		Ref:  "@{upstream}",
@@ -31,11 +31,11 @@ func testReport() CommitReport {
 	}
 }
 
-func one(report CommitReport) []CommitReport { return []CommitReport{report} }
+func one(report Report) []Report { return []Report{report} }
 
 func TestPendingInvalidFormat(t *testing.T) {
 	var buf bytes.Buffer
-	err := Commits(&buf, "bogus", one(testReport()))
+	err := Write(&buf, "bogus", one(testReport()))
 	if err == nil {
 		t.Fatal("expected an error for an invalid format")
 	}
@@ -43,7 +43,7 @@ func TestPendingInvalidFormat(t *testing.T) {
 
 func TestPendingTable(t *testing.T) {
 	var buf bytes.Buffer
-	if err := Commits(&buf, "table", one(testReport())); err != nil {
+	if err := Write(&buf, "table", one(testReport())); err != nil {
 		t.Fatal(err)
 	}
 	out := buf.String()
@@ -78,7 +78,7 @@ func TestPendingTableEmpty(t *testing.T) {
 	var buf bytes.Buffer
 	report := testReport()
 	report.Commits = nil
-	if err := Commits(&buf, "table", one(report)); err != nil {
+	if err := Write(&buf, "table", one(report)); err != nil {
 		t.Fatal(err)
 	}
 	out := buf.String()
@@ -93,7 +93,7 @@ func TestPendingTableEmpty(t *testing.T) {
 
 func TestPendingMarkdownEscapesPipe(t *testing.T) {
 	var buf bytes.Buffer
-	if err := Commits(&buf, "markdown", one(testReport())); err != nil {
+	if err := Write(&buf, "markdown", one(testReport())); err != nil {
 		t.Fatal(err)
 	}
 	out := buf.String()
@@ -136,7 +136,7 @@ type commitEnvelope struct {
 
 func TestPendingJSON(t *testing.T) {
 	var buf bytes.Buffer
-	if err := Commits(&buf, "json", one(testReport())); err != nil {
+	if err := Write(&buf, "json", one(testReport())); err != nil {
 		t.Fatal(err)
 	}
 
@@ -183,7 +183,7 @@ func TestCommitHeaderIncludesBranch(t *testing.T) {
 	report.Branch = "feat/gitgrep"
 
 	var buf bytes.Buffer
-	if err := Commits(&buf, "table", one(report)); err != nil {
+	if err := Write(&buf, "table", one(report)); err != nil {
 		t.Fatal(err)
 	}
 	out := buf.String()
@@ -194,7 +194,7 @@ func TestCommitHeaderIncludesBranch(t *testing.T) {
 
 func TestCommitHeaderOmitsBranchWhenEmpty(t *testing.T) {
 	var buf bytes.Buffer
-	if err := Commits(&buf, "table", one(testReport())); err != nil {
+	if err := Write(&buf, "table", one(testReport())); err != nil {
 		t.Fatal(err)
 	}
 	out := buf.String()
@@ -211,7 +211,7 @@ func TestCommitJSONIncludesBranch(t *testing.T) {
 	report.Branch = "main"
 
 	var buf bytes.Buffer
-	if err := Commits(&buf, "json", one(report)); err != nil {
+	if err := Write(&buf, "json", one(report)); err != nil {
 		t.Fatal(err)
 	}
 	var decoded commitEnvelope
@@ -290,7 +290,7 @@ func TestPendingSinceCommitMode(t *testing.T) {
 	report := testReport()
 	report.Mode = "since-commit"
 	report.Ref = "abc1234"
-	if err := Commits(&buf, "table", one(report)); err != nil {
+	if err := Write(&buf, "table", one(report)); err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(buf.String(), "Commits after abc1234: 2") {
@@ -303,7 +303,7 @@ func TestCommitsPushedMode(t *testing.T) {
 	report := testReport()
 	report.Mode = "pushed"
 	report.Ref = "origin/main"
-	if err := Commits(&buf, "table", one(report)); err != nil {
+	if err := Write(&buf, "table", one(report)); err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(buf.String(), "Pushed commits (most recent first, from origin/main): 2") {
@@ -317,7 +317,7 @@ func TestCommitsPushedModeNoTarget(t *testing.T) {
 	report.Mode = "pushed"
 	report.Ref = ""
 	report.Commits = nil
-	if err := Commits(&buf, "table", one(report)); err != nil {
+	if err := Write(&buf, "table", one(report)); err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(buf.String(), "branch has no upstream or remote-tracking branch") {
@@ -330,7 +330,7 @@ func TestPendingUnpushedAllMode(t *testing.T) {
 	report := testReport()
 	report.Mode = "unpushed-all"
 	report.Ref = "" // no baseline
-	if err := Commits(&buf, "table", one(report)); err != nil {
+	if err := Write(&buf, "table", one(report)); err != nil {
 		t.Fatal(err)
 	}
 	out := buf.String()
@@ -344,12 +344,12 @@ func TestPendingUnpushedAllMode(t *testing.T) {
 }
 
 // fleetReports builds three repos: two with commits, one clean.
-func fleetReports() []CommitReport {
+func fleetReports() []Report {
 	loc := time.FixedZone("", -7*3600)
 	commit := func(subj string) gogit.Commit {
 		return gogit.Commit{Hash: "aaaaaaa0000000000000000000000000000000", CommitDate: time.Date(2026, 9, 7, 9, 0, 0, 0, loc), Subject: subj}
 	}
-	return []CommitReport{
+	return []Report{
 		{Repo: "/a", Mode: "unpushed", Ref: "@{upstream}", Commits: []gogit.Commit{commit("feat: a1"), commit("feat: a2")}},
 		{Repo: "/b", Mode: "unpushed", Ref: "@{upstream}"}, // clean
 		{Repo: "/c", Mode: "unpushed-all", Ref: "", Commits: []gogit.Commit{commit("feat: c1")}},
@@ -358,7 +358,7 @@ func fleetReports() []CommitReport {
 
 func TestCommitsFleetHidesCleanAndSummarizes(t *testing.T) {
 	var buf bytes.Buffer
-	if err := Commits(&buf, "table", fleetReports()); err != nil {
+	if err := Write(&buf, "table", fleetReports()); err != nil {
 		t.Fatal(err)
 	}
 	out := buf.String()
@@ -376,7 +376,7 @@ func TestCommitsFleetHidesCleanAndSummarizes(t *testing.T) {
 
 func TestCommitsFleetJSONShape(t *testing.T) {
 	var buf bytes.Buffer
-	if err := Commits(&buf, "json", fleetReports()); err != nil {
+	if err := Write(&buf, "json", fleetReports()); err != nil {
 		t.Fatal(err)
 	}
 	var decoded commitEnvelope
@@ -394,11 +394,11 @@ func TestCommitsFleetJSONShape(t *testing.T) {
 
 func TestCommitsErrorReported(t *testing.T) {
 	var buf bytes.Buffer
-	reports := []CommitReport{
+	reports := []Report{
 		{Repo: "/broken", Err: "gogit: git rev-parse failed"},
 		{Repo: "/ok", Mode: "unpushed", Ref: "@{upstream}"},
 	}
-	if err := Commits(&buf, "table", reports); err != nil {
+	if err := Write(&buf, "table", reports); err != nil {
 		t.Fatal(err)
 	}
 	out := buf.String()
@@ -409,10 +409,100 @@ func TestCommitsErrorReported(t *testing.T) {
 
 func TestCommitsNoRepos(t *testing.T) {
 	var buf bytes.Buffer
-	if err := Commits(&buf, "table", nil); err != nil {
+	if err := Write(&buf, "table", nil); err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(buf.String(), "No repositories found.") {
 		t.Errorf("expected a no-repositories message, got: %s", buf.String())
+	}
+}
+
+func signedPtr(b bool) *bool { return &b }
+
+func TestPendingSignedColumnAndWarning(t *testing.T) {
+	report := testReport()
+	report.Commits[0].Signed = signedPtr(true)
+	report.Commits[1].Signed = signedPtr(false)
+
+	var buf bytes.Buffer
+	if err := Write(&buf, "table", one(report)); err != nil {
+		t.Fatal(err)
+	}
+	out := buf.String()
+	for _, want := range []string{"SIGNED", "yes", "NO", "WARNING: 1 of 2 commits are not signed."} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing %q in:\n%s", want, out)
+		}
+	}
+}
+
+func TestPendingSingleUnsignedCommitNoWarning(t *testing.T) {
+	report := testReport()
+	report.Commits = report.Commits[:1]
+	report.Commits[0].Signed = signedPtr(false)
+
+	var buf bytes.Buffer
+	if err := Write(&buf, "table", one(report)); err != nil {
+		t.Fatal(err)
+	}
+	out := buf.String()
+	if strings.Contains(out, "WARNING") {
+		t.Errorf("unexpected warning for a single commit:\n%s", out)
+	}
+	if !strings.Contains(out, "NO") {
+		t.Errorf("expected SIGNED column to show NO:\n%s", out)
+	}
+}
+
+func TestPendingNoSignatureInfoOmitsColumn(t *testing.T) {
+	var buf bytes.Buffer
+	if err := Write(&buf, "markdown", one(testReport())); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(buf.String(), "Signed") || strings.Contains(buf.String(), "WARNING") {
+		t.Errorf("signature output without signature info:\n%s", buf.String())
+	}
+}
+
+func TestPendingJSONSigned(t *testing.T) {
+	report := testReport()
+	report.Commits[0].Signed = signedPtr(true)
+	report.Commits[1].Signed = signedPtr(false)
+
+	var buf bytes.Buffer
+	if err := Write(&buf, "json", one(report)); err != nil {
+		t.Fatal(err)
+	}
+	var got struct {
+		Repos []struct {
+			Unsigned int `json:"unsigned"`
+			Commits  []struct {
+				Signed *bool `json:"signed"`
+			} `json:"commits"`
+		} `json:"repos"`
+	}
+	if err := json.Unmarshal(buf.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	r := got.Repos[0]
+	if r.Unsigned != 1 || r.Commits[0].Signed == nil || !*r.Commits[0].Signed || r.Commits[1].Signed == nil || *r.Commits[1].Signed {
+		t.Errorf("unexpected signed JSON: %+v", r)
+	}
+}
+
+func TestPendingMarkdownSignedColumn(t *testing.T) {
+	report := testReport()
+	report.Commits[0].Signed = signedPtr(true)
+	report.Commits[1].Signed = signedPtr(false)
+
+	var buf bytes.Buffer
+	if err := Write(&buf, "markdown", one(report)); err != nil {
+		t.Fatal(err)
+	}
+	out := buf.String()
+	for _, want := range []string{"| # | Hash | Signed |", "| 1 | 1234567 | yes |", "| 2 | abcdef1 | NO |", "WARNING: 1 of 2"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing %q in:\n%s", want, out)
+		}
 	}
 }

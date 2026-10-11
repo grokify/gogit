@@ -1,8 +1,12 @@
-// Package render formats gitscan command results for output. It is not
-// part of the gogit library's public API — cmd/*.go calls into it so the
-// formatting logic can be unit tested without invoking Cobra or capturing
-// os.Stdout.
-package render
+// Package report builds and renders commit reports — the pending (unpushed)
+// and pushed commit lists that gitscan prints — so CLI, library and MCP
+// callers share one implementation.
+//
+// A Report is one repository's commit list. Pending, PendingReport and
+// PushedReport produce reports from gogit queries; BuildEnvelope turns
+// reports into the JSON-ready Envelope (which an MCP tool can return as is);
+// Write renders reports as an aligned table, markdown, or JSON.
+package report
 
 import (
 	"encoding/json"
@@ -15,11 +19,11 @@ import (
 	"github.com/grokify/gogit"
 )
 
-// CommitFormats lists the format values Commits accepts.
-var CommitFormats = []string{"table", "markdown", "json"}
+// Formats lists the format values Commits accepts.
+var Formats = []string{"table", "markdown", "json"}
 
-// CommitTimezones lists the --tz values ApplyTimezone accepts.
-var CommitTimezones = []string{"original", "local", "utc"}
+// Timezones lists the --tz values ApplyTimezone accepts.
+var Timezones = []string{"original", "local", "utc"}
 
 // ApplyTimezone returns a copy of commits with each CommitDate converted
 // per tz: "original" (or "") leaves each commit's own recorded offset
@@ -35,7 +39,7 @@ func ApplyTimezone(commits []gogit.Commit, tz string) ([]gogit.Commit, error) {
 	case "utc":
 		loc = time.UTC
 	default:
-		return nil, fmt.Errorf("render: invalid tz %q, must be one of %s", tz, strings.Join(CommitTimezones, ", "))
+		return nil, fmt.Errorf("report: invalid tz %q, must be one of %s", tz, strings.Join(Timezones, ", "))
 	}
 
 	out := make([]gogit.Commit, len(commits))
@@ -46,10 +50,10 @@ func ApplyTimezone(commits []gogit.Commit, tz string) ([]gogit.Commit, error) {
 	return out, nil
 }
 
-// CommitReport describes a labeled list of commits from one repository, as
+// Report describes a labeled list of commits from one repository, as
 // produced by the pending and pushed commands. The rendered table/markdown/
 // json bodies are identical across modes; only the per-repo header differs.
-type CommitReport struct {
+type Report struct {
 	Repo string
 	// Branch is the repository's current branch (or "HEAD" when detached),
 	// shown in the header so a report is never read against the wrong
@@ -75,7 +79,7 @@ type CommitReport struct {
 	Err string
 }
 
-// Commits renders a set of per-repo CommitReports to w in the given format:
+// Write renders a set of per-repo Reports to w in the given format:
 // "table" (aligned columns via text/tabwriter, for direct terminal reading),
 // "markdown" (copy-pasteable GitHub-flavored tables), or "json" (structured
 // envelope, for agents).
@@ -85,7 +89,7 @@ type CommitReport struct {
 // to branch on how many repos were reported. In multi-repo output, repos with
 // no matching commits (and no error) are omitted from the human-readable
 // formats; the summary always reflects every repo scanned.
-func Commits(w io.Writer, format string, reports []CommitReport) error {
+func Write(w io.Writer, format string, reports []Report) error {
 	switch format {
 	case "json":
 		return commitsJSON(w, reports)
@@ -94,93 +98,105 @@ func Commits(w io.Writer, format string, reports []CommitReport) error {
 	case "table":
 		commitsText(w, reports, false)
 	default:
-		return fmt.Errorf("render: invalid format %q, must be one of %s", format, strings.Join(CommitFormats, ", "))
+		return fmt.Errorf("report: invalid format %q, must be one of %s", format, strings.Join(Formats, ", "))
 	}
 	return nil
 }
 
-// commitRowJSON is the JSON representation of one commit.
-type commitRowJSON struct {
+// Row is the JSON representation of one commit.
+type Row struct {
 	Hash      string `json:"hash"`
 	Weekday   string `json:"weekday"`   // Sun, Mon, ..., Sat, in the commit's rendered timezone
 	Date      string `json:"date"`      // 2006-01-02, in the commit's rendered timezone
 	Time      string `json:"time"`      // 15:04:05, in the commit's rendered timezone
 	Timestamp string `json:"timestamp"` // RFC3339, in the commit's rendered timezone
 	Message   string `json:"message"`
+	Signed    *bool  `json:"signed,omitempty"` // nil when signature state was not collected
 }
 
-// commitRepoJSON is one repository's entry in the JSON envelope.
-type commitRepoJSON struct {
-	Repo    string          `json:"repo"`
-	Branch  string          `json:"branch,omitempty"` // see CommitReport.Branch
-	Mode    string          `json:"mode"`             // see CommitReport.Mode
-	Ref     string          `json:"ref"`              // baseline ref or hash; may be empty
-	Count   int             `json:"count"`
-	Commits []commitRowJSON `json:"commits"`
-	Files   []string        `json:"files,omitempty"` // merged paths touched by the commits
-	Error   string          `json:"error,omitempty"`
+// RepoEntry is one repository's entry in the JSON envelope.
+type RepoEntry struct {
+	Repo   string `json:"repo"`
+	Branch string `json:"branch,omitempty"` // see Report.Branch
+	Mode   string `json:"mode"`             // see Report.Mode
+	Ref    string `json:"ref"`              // baseline ref or hash; may be empty
+	Count  int    `json:"count"`
+	// Unsigned counts commits known to be unsigned; omitted when none are.
+	Unsigned int      `json:"unsigned,omitempty"`
+	Commits  []Row    `json:"commits"`
+	Files    []string `json:"files,omitempty"` // merged paths touched by the commits
+	Error    string   `json:"error,omitempty"`
 }
 
-// commitSummaryJSON aggregates a commit report across repositories.
-type commitSummaryJSON struct {
+// Summary aggregates a commit report across repositories.
+type Summary struct {
 	ReposScanned     int `json:"reposScanned"`
 	ReposWithCommits int `json:"reposWithCommits"`
 	CommitsTotal     int `json:"commitsTotal"`
 }
 
-// commitEnvelopeJSON is the (always list-shaped) JSON envelope.
-type commitEnvelopeJSON struct {
-	Repos   []commitRepoJSON  `json:"repos"`
-	Summary commitSummaryJSON `json:"summary"`
+// Envelope is the (always list-shaped) JSON envelope.
+type Envelope struct {
+	Repos   []RepoEntry `json:"repos"`
+	Summary Summary     `json:"summary"`
 }
 
-func commitsJSON(w io.Writer, reports []CommitReport) error {
-	out := commitEnvelopeJSON{
-		Repos:   make([]commitRepoJSON, 0, len(reports)),
-		Summary: summarize(reports),
+// BuildEnvelope converts reports into the JSON envelope: the repos that
+// would be shown in human-readable output plus a summary over every report.
+// It is what Write encodes for the "json" format, exposed so callers (an MCP
+// server, say) can return the structure directly.
+func BuildEnvelope(reports []Report) Envelope {
+	out := Envelope{
+		Repos:   make([]RepoEntry, 0, len(reports)),
+		Summary: Summarize(reports),
 	}
 	for _, report := range reports {
 		if !showRepo(report, len(reports)) {
 			continue
 		}
-		repo := commitRepoJSON{
-			Repo:    report.Repo,
-			Branch:  report.Branch,
-			Mode:    report.Mode,
-			Ref:     report.Ref,
-			Count:   len(report.Commits),
-			Commits: make([]commitRowJSON, 0, len(report.Commits)),
-			Files:   report.Files,
-			Error:   report.Err,
+		repo := RepoEntry{
+			Repo:     report.Repo,
+			Branch:   report.Branch,
+			Mode:     report.Mode,
+			Ref:      report.Ref,
+			Count:    len(report.Commits),
+			Unsigned: gogit.CountUnsigned(report.Commits),
+			Commits:  make([]Row, 0, len(report.Commits)),
+			Files:    report.Files,
+			Error:    report.Err,
 		}
 		for _, c := range report.Commits {
-			repo.Commits = append(repo.Commits, commitRowJSON{
+			repo.Commits = append(repo.Commits, Row{
 				Hash:      c.Hash,
 				Weekday:   weekday(c.CommitDate),
 				Date:      c.CommitDate.Format("2006-01-02"),
 				Time:      c.CommitDate.Format("15:04:05"),
 				Timestamp: rfc3339(c.CommitDate),
 				Message:   c.Subject,
+				Signed:    c.Signed,
 			})
 		}
 		out.Repos = append(out.Repos, repo)
 	}
+	return out
+}
 
+func commitsJSON(w io.Writer, reports []Report) error {
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
-	return enc.Encode(out)
+	return enc.Encode(BuildEnvelope(reports))
 }
 
 // showRepo reports whether a repo appears in the human-readable output: it is
 // shown when it has commits or an error, or when it is the only repo scanned
 // (so an explicit single-repo query always prints something).
-func showRepo(report CommitReport, total int) bool {
+func showRepo(report Report, total int) bool {
 	return report.Err != "" || len(report.Commits) > 0 || total == 1
 }
 
-// summarize aggregates counts across every scanned repository.
-func summarize(reports []CommitReport) commitSummaryJSON {
-	s := commitSummaryJSON{ReposScanned: len(reports)}
+// Summarize aggregates counts across every scanned repository.
+func Summarize(reports []Report) Summary {
+	s := Summary{ReposScanned: len(reports)}
 	for _, report := range reports {
 		if len(report.Commits) > 0 {
 			s.ReposWithCommits++
@@ -191,7 +207,7 @@ func summarize(reports []CommitReport) commitSummaryJSON {
 }
 
 // commitHeader writes one repo's header lines.
-func commitHeader(w io.Writer, report CommitReport) {
+func commitHeader(w io.Writer, report Report) {
 	if report.Branch != "" {
 		fmt.Fprintf(w, "Repo: %s (branch: %s)\n", report.Repo, report.Branch)
 	} else {
@@ -220,7 +236,7 @@ func commitHeader(w io.Writer, report CommitReport) {
 // commitsText renders every shown repository followed by a summary. When
 // markdown is true each commit list is a GitHub-flavored table; otherwise
 // it is an aligned text/tabwriter table for terminal reading.
-func commitsText(w io.Writer, reports []CommitReport, markdown bool) {
+func commitsText(w io.Writer, reports []Report, markdown bool) {
 	if len(reports) == 0 {
 		fmt.Fprintln(w, "No repositories found.")
 		return
@@ -240,15 +256,36 @@ func commitsText(w io.Writer, reports []CommitReport, markdown bool) {
 			commitRowsTable(w, report.Commits)
 		}
 		fmt.Fprintln(w)
+		commitUnsignedWarning(w, report.Commits)
 		commitFiles(w, report.Files, markdown)
 	}
 
 	// The per-repo header already conveys the count for a single repo; only
-	// summarize when a fleet was scanned.
+	// Summarize when a fleet was scanned.
 	if len(reports) > 1 {
-		s := summarize(reports)
+		s := Summarize(reports)
 		fmt.Fprintf(w, "Summary: %d repos scanned, %d with %s commits, %d commits total\n",
 			s.ReposScanned, s.ReposWithCommits, summaryNoun(reports), s.CommitsTotal)
+	}
+}
+
+// signedLabel renders a commit's signature state for the SIGNED column.
+func signedLabel(c gogit.Commit) string {
+	switch {
+	case !c.HasSignature():
+		return "?"
+	case c.IsUnsigned():
+		return "NO"
+	default:
+		return "yes"
+	}
+}
+
+// commitUnsignedWarning prints the library's signature warning, if any, so an
+// unsigned commit is noticed before it reaches the remote.
+func commitUnsignedWarning(w io.Writer, commits []gogit.Commit) {
+	if msg := gogit.SignatureWarning(commits); msg != "" {
+		fmt.Fprintf(w, "WARNING: %s.\n\n", msg)
 	}
 }
 
@@ -274,7 +311,7 @@ func commitFiles(w io.Writer, files []string, markdown bool) {
 }
 
 // summaryNoun labels the summary's per-repo count based on what was reported.
-func summaryNoun(reports []CommitReport) string {
+func summaryNoun(reports []Report) string {
 	for _, report := range reports {
 		if report.Mode == "pushed" {
 			return "pushed"
@@ -286,8 +323,19 @@ func summaryNoun(reports []CommitReport) string {
 // commitRowsTable renders commits as an aligned text/tabwriter table.
 func commitRowsTable(w io.Writer, commits []gogit.Commit) {
 	tw := tabwriter.NewWriter(w, 0, 2, 2, ' ', 0)
-	fmt.Fprintln(tw, "#\tHASH\tDAY\tTIMESTAMP\tMESSAGE")
+	showSigned := gogit.HasSignatureInfo(commits)
+	if showSigned {
+		fmt.Fprintln(tw, "#\tHASH\tSIGNED\tDAY\tTIMESTAMP\tMESSAGE")
+	} else {
+		fmt.Fprintln(tw, "#\tHASH\tDAY\tTIMESTAMP\tMESSAGE")
+	}
 	for i, c := range commits {
+		if showSigned {
+			fmt.Fprintf(tw, "%d\t%s\t%s\t%s\t%s\t%s\n",
+				i+1, shortHash(c.Hash), signedLabel(c), weekday(c.CommitDate), rfc3339(c.CommitDate),
+				sanitizeTabwriterCell(c.Subject))
+			continue
+		}
 		fmt.Fprintf(tw, "%d\t%s\t%s\t%s\t%s\n",
 			i+1, shortHash(c.Hash), weekday(c.CommitDate), rfc3339(c.CommitDate),
 			sanitizeTabwriterCell(c.Subject))
@@ -298,9 +346,21 @@ func commitRowsTable(w io.Writer, commits []gogit.Commit) {
 // commitRowsMarkdown renders commits as a copy-pasteable GitHub-flavored
 // markdown table (e.g. for pasting into a PR description or issue).
 func commitRowsMarkdown(w io.Writer, commits []gogit.Commit) {
-	fmt.Fprintln(w, "| # | Hash | Day | Timestamp | Message |")
-	fmt.Fprintln(w, "|---|------|-----|-----------|---------|")
+	showSigned := gogit.HasSignatureInfo(commits)
+	if showSigned {
+		fmt.Fprintln(w, "| # | Hash | Signed | Day | Timestamp | Message |")
+		fmt.Fprintln(w, "|---|------|--------|-----|-----------|---------|")
+	} else {
+		fmt.Fprintln(w, "| # | Hash | Day | Timestamp | Message |")
+		fmt.Fprintln(w, "|---|------|-----|-----------|---------|")
+	}
 	for i, c := range commits {
+		if showSigned {
+			fmt.Fprintf(w, "| %d | %s | %s | %s | %s | %s |\n",
+				i+1, shortHash(c.Hash), signedLabel(c), weekday(c.CommitDate), rfc3339(c.CommitDate),
+				escapeMarkdownCell(c.Subject))
+			continue
+		}
 		fmt.Fprintf(w, "| %d | %s | %s | %s | %s |\n",
 			i+1, shortHash(c.Hash), weekday(c.CommitDate), rfc3339(c.CommitDate),
 			escapeMarkdownCell(c.Subject))

@@ -9,7 +9,7 @@ import (
 
 	"github.com/grokify/gogit"
 	"github.com/grokify/gogit/internal/cliutil"
-	"github.com/grokify/gogit/internal/render"
+	"github.com/grokify/gogit/report"
 	"github.com/grokify/mogo/fmt/progress"
 	"github.com/spf13/cobra"
 )
@@ -44,6 +44,12 @@ push target — its configured upstream, or the matching remote-tracking branch
 (e.g. origin/main). A branch that was never pushed has no such target, so all
 of its commits are reported as pending. Use --since-commit to list commits
 after a specific commit instead; that applies to a single repository only.
+
+Each commit's SIGNED column shows whether it carries a signature (yes/NO), and
+a warning with the unsigned count is printed when more than one commit is
+pending and some are unsigned. Only the presence of a signature is checked, not
+its validity, so no keys or allowed-signers file are needed. In JSON each
+commit has a "signed" boolean and each repo an "unsigned" count.
 
 With --files, each repository also lists the paths touched by its pending
 commits, merged into one sorted list with each path once. Paths are relative
@@ -83,7 +89,7 @@ func runPending(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	if len(repos) == 0 {
-		return render.Commits(os.Stdout, pendingFormat, nil)
+		return report.Write(os.Stdout, pendingFormat, nil)
 	}
 	if pendingSinceCommit != "" && len(repos) > 1 {
 		return fmt.Errorf("--since-commit applies to a single repository, but %d were found under the given path(s)", len(repos))
@@ -104,51 +110,20 @@ func runPending(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	results := gogit.RunAllWithProgress(context.Background(), repos,
-		func(ctx context.Context, r *gogit.Repo) (gogit.PendingResult, error) {
-			if pendingFiles {
-				return r.PendingFiles(ctx, pendingSinceCommit)
-			}
-			return r.PendingCommits(ctx, pendingSinceCommit)
-		}, 0, progressFn)
-
+	reports, err := report.Pending(context.Background(), repos, report.PendingOptions{
+		SinceCommit: pendingSinceCommit,
+		Files:       pendingFiles,
+		TZ:          pendingTZ,
+		Progress:    progressFn,
+	})
 	if renderer != nil {
 		renderer.Done(fmt.Sprintf("Checked %d repositories.", len(repos)))
 	}
-
-	reports := make([]render.CommitReport, len(results))
-	for i, res := range results {
-		report := render.CommitReport{Repo: res.Path}
-		if res.Err != nil {
-			report.Err = res.Err.Error()
-			reports[i] = report
-			continue
-		}
-		commits, err := render.ApplyTimezone(res.Value.Commits, pendingTZ)
-		if err != nil {
-			return err
-		}
-		report.Commits = commits
-		report.Files = res.Value.Files
-		report.Ref = res.Value.Baseline
-		report.Branch = res.Value.Branch
-		report.Mode = pendingMode(pendingSinceCommit, res.Value.Baseline)
-		reports[i] = report
+	if err != nil {
+		return err
 	}
 
-	return render.Commits(os.Stdout, pendingFormat, reports)
-}
-
-// pendingMode maps a pending query to its render mode.
-func pendingMode(sinceCommit, baseline string) string {
-	switch {
-	case sinceCommit != "":
-		return "since-commit"
-	case baseline == "":
-		return "unpushed-all"
-	default:
-		return "unpushed"
-	}
+	return report.Write(os.Stdout, pendingFormat, reports)
 }
 
 // discoverRepos resolves each path (defaulting to the current directory) and
