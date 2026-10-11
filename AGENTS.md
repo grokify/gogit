@@ -73,6 +73,11 @@ release-tagging checklist).
   severities) — callers own that; gogit stays generic and reusable.
 - `scanner/` — fleet enumeration (`ScanDirectory`) and `GitBackend` for
   multi-repo status/dependency scanning; backs the `gitscan` CLI.
+- `report/` — public commit-report layer shared by the CLI and library/MCP
+  callers: `Pending`/`Pushed` build `Report`s from gogit queries,
+  `BuildEnvelope` produces the JSON-ready structure, `Write` renders table,
+  markdown, or JSON. Keep decisions (modes, signature warnings, timezone
+  handling) here or in the root package, not in `cmd/`.
 - `cmd/` — the `gitscan` Cobra CLI (root scan, `since`, `dep`, `order`,
   `pending`, `pushed`, `grep`).
 

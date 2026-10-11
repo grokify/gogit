@@ -162,7 +162,7 @@ gitscan [directory]              # Scan for issues (defaults to current dir)
 gitscan since <duration> [dir]   # Filter by modification time
 gitscan dep <module> [dir]       # Filter by dependency
 gitscan order [dir]              # Show repos in dependency order
-gitscan pending [path...]        # List unpushed commits, across one or many repos
+gitscan pending [path...]        # List unpushed commits (with signed/unsigned) across one or many repos
 gitscan pushed [count] [dir]     # List the most recent pushed commits
 gitscan grep -e <pattern> [dir]  # Search content or history for one or more patterns
 ```
