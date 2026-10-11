@@ -3,6 +3,7 @@ package gogit
 import (
 	"context"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"testing"
@@ -486,5 +487,87 @@ func TestPendingFilesSinceHash(t *testing.T) {
 	}
 	if !slices.Equal(res.Files, []string{"b.txt"}) {
 		t.Fatalf("Files = %q, want [b.txt]", res.Files)
+	}
+}
+
+// TestPendingCommitsSignedState signs one of two pending commits with a
+// throwaway SSH key and checks Signed is reported per commit. No
+// allowed-signers file is configured, which is exactly the case where git's
+// own %G? status would wrongly report the signed commit as unsigned.
+func TestPendingCommitsSignedState(t *testing.T) {
+	if _, err := exec.LookPath("ssh-keygen"); err != nil {
+		t.Skip("ssh-keygen not available")
+	}
+	dir, _ := pushableRepo(t)
+	key := filepath.Join(t.TempDir(), "key")
+	//nolint:gosec // G204: test helper; args are literals and a temp path
+	if out, err := exec.Command("ssh-keygen", "-q", "-t", "ed25519", "-N", "", "-f", key).CombinedOutput(); err != nil {
+		t.Fatalf("ssh-keygen: %v: %s", err, out)
+	}
+
+	commitFile(t, dir, "b.txt", "b\n", "feat: unsigned")
+	run(t, dir, "config", "gpg.format", "ssh")
+	run(t, dir, "config", "user.signingkey", key+".pub")
+	if err := os.WriteFile(filepath.Join(dir, "c.txt"), []byte("c\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	run(t, dir, "add", "-A")
+	run(t, dir, "commit", "-q", "-S", "-m", "feat: signed")
+
+	r, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := r.PendingCommits(context.Background(), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Commits) != 2 {
+		t.Fatalf("expected 2 pending commits, got %d", len(res.Commits))
+	}
+	want := map[string]bool{"feat: unsigned": false, "feat: signed": true}
+	for _, c := range res.Commits {
+		if c.Signed == nil {
+			t.Fatalf("%s: Signed not populated", c.Subject)
+		}
+		if *c.Signed != want[c.Subject] {
+			t.Errorf("%s: Signed = %v, want %v", c.Subject, *c.Signed, want[c.Subject])
+		}
+	}
+}
+
+func TestLogSignedNilWithoutOption(t *testing.T) {
+	dir, _ := pushableRepo(t)
+	r, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	commits, err := r.Log(context.Background(), LogOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range commits {
+		if c.Signed != nil {
+			t.Errorf("%s: Signed should be nil without IncludeSignature", c.Hash)
+		}
+	}
+}
+
+// A message that merely mentions "gpgsig" (even on a line of its own) must
+// not read as signed: message lines are indented in the raw commit object.
+func TestPendingCommitsMessageMentioningGpgsigIsUnsigned(t *testing.T) {
+	dir, _ := pushableRepo(t)
+	commitFile(t, dir, "b.txt", "b\n", "fix: header parsing\n\ngpgsig -----BEGIN SSH SIGNATURE-----\ncommit deadbeef")
+
+	r, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := r.PendingCommits(context.Background(), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Commits) != 1 || res.Commits[0].Signed == nil || *res.Commits[0].Signed {
+		t.Fatalf("expected one commit with Signed=false, got %+v", res.Commits)
 	}
 }

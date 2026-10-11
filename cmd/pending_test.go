@@ -263,3 +263,27 @@ func TestRunPendingWithoutFilesIsUnchanged(t *testing.T) {
 		t.Errorf("JSON must omit files without --files:\n%s", out)
 	}
 }
+
+func TestRunPendingSignedColumnAndWarning(t *testing.T) {
+	resetFlags(t)
+	work := pushableRepo(t)
+	for _, name := range []string{"b.txt", "c.txt"} {
+		if err := os.WriteFile(filepath.Join(work, name), []byte(name+"\n"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		gitRun(t, work, "add", "-A")
+		gitRun(t, work, "commit", "-q", "-m", "feat: add "+name)
+	}
+
+	out := captureStdout(t, func() {
+		if err := runPending(nil, []string{work}); err != nil {
+			t.Fatal(err)
+		}
+	})
+	if !strings.Contains(out, "SIGNED") || !strings.Contains(out, "NO") {
+		t.Errorf("expected SIGNED column with NO: %s", out)
+	}
+	if !strings.Contains(out, "WARNING: 2 of 2 commits are not signed.") {
+		t.Errorf("expected unsigned warning: %s", out)
+	}
+}
