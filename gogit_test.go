@@ -451,3 +451,30 @@ func TestParseSignature(t *testing.T) {
 		}
 	}
 }
+
+func TestLsTreeSkipsSubmodules(t *testing.T) {
+	dir := t.TempDir()
+	initRepo(t, dir)
+	commitFile(t, dir, "a.txt", "a\n", "add a")
+	if err := os.MkdirAll(filepath.Join(dir, "sub dir"), 0o750); err != nil {
+		t.Fatal(err)
+	}
+	commitFile(t, dir, filepath.Join("sub dir", "b file.txt"), "b\n", "add b")
+	// A gitlink needs no .gitmodules: it is a tree entry of mode 160000.
+	run(t, dir, "update-index", "--add", "--cacheinfo",
+		"160000,383ec57da7c917488cf6f26c4493826fb84463f6,vendor/pointer")
+	run(t, dir, "commit", "-q", "-m", "add submodule pointer")
+
+	repo, err := Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := repo.LsTree(context.Background(), "HEAD")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"a.txt", "sub dir/b file.txt"}
+	if strings.Join(got, "|") != strings.Join(want, "|") {
+		t.Fatalf("LsTree = %q, want %q", got, want)
+	}
+}

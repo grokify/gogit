@@ -2,6 +2,7 @@ package gogit
 
 import (
 	"context"
+	"fmt"
 	"strings"
 )
 
@@ -44,13 +45,28 @@ func (r *Repo) ShowContent(ctx context.Context, spec string) (string, error) {
 }
 
 // LsTree returns the paths of all files present at a revision (git ls-tree
-// -r), i.e. the full file list of that commit's tree.
+// -r), i.e. the full file list of that commit's tree. A submodule entry (mode
+// 160000) is a pointer to a commit in another repository, not a file, so it
+// is left out: ShowContent cannot read it.
 func (r *Repo) LsTree(ctx context.Context, rev string) ([]string, error) {
-	out, err := r.git(ctx, "ls-tree", "-r", "--name-only", "-z", rev)
+	out, err := r.git(ctx, "ls-tree", "-r", "-z", rev)
 	if err != nil {
 		return nil, err
 	}
-	return splitNUL(out), nil
+	entries := splitNUL(out)
+	paths := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		// "<mode> SP <type> SP <object> TAB <path>"
+		meta, path, ok := strings.Cut(entry, "\t")
+		if !ok {
+			return nil, fmt.Errorf("gogit: unexpected ls-tree entry %q", entry)
+		}
+		if strings.HasPrefix(meta, "160000 ") {
+			continue
+		}
+		paths = append(paths, path)
+	}
+	return paths, nil
 }
 
 // LastCommitTouching returns the hash of the most recent commit at or before
