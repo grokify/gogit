@@ -224,6 +224,12 @@ func readPatches(r io.Reader, fn func(Patch) error) error {
 func diffPath(fileDiff string) string {
 	var plus, minus string
 	for _, line := range strings.Split(fileDiff, "\n") {
+		// The paths are in the header, before the first hunk. Stopping
+		// there keeps an added line such as "++ b/x" (shown as "+++ b/x")
+		// from being read as the file's path.
+		if strings.HasPrefix(line, "@@") {
+			break
+		}
 		switch {
 		case strings.HasPrefix(line, "+++ b/"):
 			plus = strings.TrimPrefix(line, "+++ b/")
