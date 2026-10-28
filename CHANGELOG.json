@@ -9,6 +9,32 @@
   ],
   "releases": [
     {
+      "version": "v0.15.1",
+      "date": "2026-10-28",
+      "fixed": [
+        {
+          "description": "`Repo.LsTree` leaves out submodule entries (mode 160000), which name a commit in another repository and have no content here, so callers that read every listed file with `ShowContent` no longer abort on a bad object error",
+          "commit": "433103e"
+        },
+        {
+          "description": "`gitgrep` takes a patch's path from its diff header only, so an added line such as `++ b/x` (shown as `+++ b/x`) is no longer read as the file's path",
+          "commit": "cc65a7f"
+        }
+      ],
+      "performance": [
+        {
+          "description": "`gitgrep.StreamPatches` reads `git log -p` output as git writes it and passes each file diff on as soon as it is complete, instead of buffering the whole history first, so memory use is bounded by the largest file diff and the caller's work overlaps git's; git is stopped when the callback returns an error",
+          "commit": "436e400"
+        }
+      ],
+      "tests": [
+        {
+          "description": "Cover `StreamPatches` stopping on a callback error, an unknown revision, multi-megabyte lines, and diff-header paths",
+          "commit": "11e45ef"
+        }
+      ]
+    },
+    {
       "version": "v0.15.0",
       "date": "2026-10-11",
       "highlights": [
