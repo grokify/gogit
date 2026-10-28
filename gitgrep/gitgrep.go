@@ -65,9 +65,7 @@ type Match struct {
 // non-error empty result, which git grep and git log use to signal "no
 // matches" rather than a failure.
 func runGit(ctx context.Context, repoPath string, tolerateExit1 bool, args ...string) (string, error) {
-	fullArgs := append([]string{"-C", repoPath}, args...)
-	cmd := exec.CommandContext(ctx, "git", fullArgs...)
-	cmd.Env = append(os.Environ(), "LC_ALL=C", "GIT_TERMINAL_PROMPT=0")
+	cmd := gitCommand(ctx, repoPath, args...)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -81,6 +79,15 @@ func runGit(ctx context.Context, repoPath string, tolerateExit1 bool, args ...st
 			strings.Join(args, " "), repoPath, err, strings.TrimSpace(stderr.String()))
 	}
 	return stdout.String(), nil
+}
+
+// gitCommand builds a git command for repoPath with gogit's standard
+// hardening (see runGit).
+func gitCommand(ctx context.Context, repoPath string, args ...string) *exec.Cmd {
+	fullArgs := append([]string{"-C", repoPath}, args...)
+	cmd := exec.CommandContext(ctx, "git", fullArgs...)
+	cmd.Env = append(os.Environ(), "LC_ALL=C", "GIT_TERMINAL_PROMPT=0")
+	return cmd
 }
 
 // patternGroup keys patterns by the git grep flags they require, since

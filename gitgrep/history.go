@@ -1,8 +1,12 @@
 package gitgrep
 
 import (
+	"bufio"
+	"bytes"
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"regexp"
 	"strings"
 )
@@ -42,23 +46,39 @@ const (
 // StreamPatches walks `git log -p` over rng and invokes fn once per file
 // diff, with commit context. rng may be a range ("base..head"), a single
 // rev, "--all", or "" (the default log from HEAD). If fn returns a non-nil
-// error the walk stops and that error is returned.
+// error the walk stops, git is stopped, and that error is returned.
 //
-// Exhaustive history walks (e.g. "--all" on a large repo) can produce large
-// output; prefer a bounded range where possible.
+// Output is read as git writes it and each file diff is passed to fn as
+// soon as it is complete, so memory use is bounded by the largest single
+// file diff rather than the whole history, and fn's work overlaps git's.
 func StreamPatches(ctx context.Context, repoPath, rng string, fn func(Patch) error) error {
 	args := []string{"log", "-p", logFormat}
 	if rng != "" {
 		args = append(args, rng)
 	}
-	out, err := runGit(ctx, repoPath, false, args...)
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	cmd := gitCommand(ctx, repoPath, args...)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	stdout, err := cmd.StdoutPipe()
 	if err != nil {
+		return fmt.Errorf("gogit/gitgrep: git %s in %s: %w", strings.Join(args, " "), repoPath, err)
+	}
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("gogit/gitgrep: git %s in %s: %w", strings.Join(args, " "), repoPath, err)
+	}
+	if err := readPatches(stdout, fn); err != nil {
+		// Stop git rather than reading the rest of its output. Its exit
+		// status is then a consequence of the kill, so the error to report
+		// is the one that stopped the walk.
+		cancel()
+		_ = cmd.Wait() // error discarded on purpose: see above
 		return err
 	}
-	for _, patch := range parsePatches(out) {
-		if err := fn(patch); err != nil {
-			return err
-		}
+	if err := cmd.Wait(); err != nil {
+		return fmt.Errorf("gogit/gitgrep: git %s in %s: %w: %s",
+			strings.Join(args, " "), repoPath, err, strings.TrimSpace(stderr.String()))
 	}
 	return nil
 }
@@ -133,60 +153,70 @@ func lineMatcher(p Pattern) (func(string) bool, error) {
 // file per commit.
 func parsePatches(out string) []Patch {
 	var patches []Patch
-	// The first segment before the first record separator is empty.
-	for _, commit := range strings.Split(out, recordSep) {
-		if strings.TrimSpace(commit) == "" {
-			continue
-		}
-		nl := strings.IndexByte(commit, '\n')
-		if nl < 0 {
-			continue
-		}
-		header := commit[:nl]
-		body := commit[nl+1:]
-		fields := strings.SplitN(header, fieldSep, 4)
-		if len(fields) != 4 {
-			continue
-		}
-		sha, author, date, _ := fields[0], fields[1], fields[2], fields[3]
-
-		for _, fileDiff := range splitFileDiffs(body) {
-			path := diffPath(fileDiff)
-			if path == "" {
-				continue
-			}
-			patches = append(patches, Patch{
-				Commit: sha,
-				Author: author,
-				Date:   date,
-				Path:   path,
-				Hunk:   fileDiff,
-			})
-		}
+	// Collecting into a slice cannot fail, so readPatches cannot either.
+	if err := readPatches(strings.NewReader(out), func(p Patch) error {
+		patches = append(patches, p)
+		return nil
+	}); err != nil {
+		panic(err)
 	}
 	return patches
 }
 
-// splitFileDiffs splits a commit's patch body into per-file sections, each
-// beginning with a "diff --git " line.
-func splitFileDiffs(body string) []string {
-	lines := strings.Split(body, "\n")
-	var sections []string
-	var cur []string
-	flush := func() {
-		if len(cur) > 0 {
-			sections = append(sections, strings.Join(cur, "\n"))
-			cur = nil
+// readPatches parses `git log -p` output (with logFormat) from r, calling fn
+// for each file diff as soon as it is complete. A commit starts at a line
+// beginning with the record separator, and a file diff at a line beginning
+// with "diff --git ". Lines are read whole however long they are, since a
+// minified or generated file can put megabytes on one line.
+func readPatches(r io.Reader, fn func(Patch) error) error {
+	br := bufio.NewReaderSize(r, 64<<10)
+	var commit Patch // Commit, Author, Date of the commit being read
+	inCommit := false
+	var section []string
+	flush := func() error {
+		defer func() { section = section[:0] }()
+		if !inCommit || len(section) == 0 || !strings.HasPrefix(section[0], "diff --git ") {
+			return nil
+		}
+		hunk := strings.Join(section, "\n")
+		path := diffPath(hunk)
+		if path == "" {
+			return nil
+		}
+		p := commit
+		p.Path, p.Hunk = path, hunk
+		return fn(p)
+	}
+	for {
+		line, err := br.ReadString('\n')
+		if err != nil && !errors.Is(err, io.EOF) {
+			return fmt.Errorf("gogit/gitgrep: read git log output: %w", err)
+		}
+		if line != "" {
+			line = strings.TrimSuffix(line, "\n")
+			switch {
+			case strings.HasPrefix(line, recordSep):
+				if ferr := flush(); ferr != nil {
+					return ferr
+				}
+				fields := strings.SplitN(strings.TrimPrefix(line, recordSep), fieldSep, 4)
+				inCommit = len(fields) == 4
+				if inCommit {
+					commit = Patch{Commit: fields[0], Author: fields[1], Date: fields[2]}
+				}
+			case strings.HasPrefix(line, "diff --git "):
+				if ferr := flush(); ferr != nil {
+					return ferr
+				}
+				section = append(section, line)
+			default:
+				section = append(section, line)
+			}
+		}
+		if errors.Is(err, io.EOF) {
+			return flush()
 		}
 	}
-	for _, line := range lines {
-		if strings.HasPrefix(line, "diff --git ") {
-			flush()
-		}
-		cur = append(cur, line)
-	}
-	flush()
-	return sections
 }
 
 // diffPath extracts the file path from a single file diff, preferring the
